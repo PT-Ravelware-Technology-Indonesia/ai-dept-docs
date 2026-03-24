@@ -16,71 +16,92 @@ const config: ZudokuConfig = {
         {
           type: "category",
           label: "Getting Started",
+          "collapsible": true,
+          "collapsed": true,
           icon: "sparkles",
           items: [
-            "/introduction",
             {
-              type: "link",
-              icon: "folder-cog",
-              badge: {
-                label: "New",
-                color: "purple",
-              },
-              label: "API Reference",
-              to: "/api",
+              "type": "doc",
+              "file": "home/introduction",
+              "label": "Introduction",
+              "icon": "notebook-pen"
             },
-          ],
-        },
-        {
-          type: "category",
-          label: "Useful Links",
-          collapsible: false,
-          icon: "link",
-          items: [
             {
-              type: "link",
-              icon: "book",
-              label: "Zudoku Docs",
-              to: "https://zudoku.dev/docs/",
+              "type": "category",
+              "label": "Tools",
+              "icon": "hammer",
+              "collapsible": true,
+              "collapsed": true,
+              "items": [
+                {
+                  "type": "doc",
+                  "file": "home/tools/uv",
+                  "label": "uv",
+                  "icon": "bolt"
+                }
+              ]
             },
+            {
+              "type": "doc",
+              "file": "home/business-process",
+              "label": "Business Process",
+              "icon": "briefcase-business"
+            },
+
           ],
         },
       ],
     },
     {
-      type: "link",
+      type: "category",
       label: "Research",
-      to: "/research",
-    },
-    {
-      type: "link",
-      label: "Prototyping",
-      to: "/prototyping",
-    },
-    {
-      type: "link",
-      label: "Development",
-      to: "/development",
-    },
-    {
-      type: "link",
-      label: "Testing",
-      to: "/testing",
-    },
-    {
-      type: "link",
-      label: "Deployment",
-      to: "/deployment",
-    },
-  ],
-  redirects: [{ from: "/", to: "/introduction" }],
-  apis: [
-    {
-      type: "file",
-      input: "./apis/openapi.yaml",
-      path: "/api",
-    },
-  ],
+      items: [
+        "/research",
+        {
+          "type": "category",
+          "label": "Research Guide",
+          "collapsible": true,
+          "collapsed": true,
+          "items": [
+            {
+              "type": "doc",
+              "file": "research/research-template",
+              "label": "Report Template",
+              "icon": "file-text"
+            }
+          ]
+        }
+      ],
+  },
+  {
+    type: "category",
+    label: "Prototyping",
+    items: [
+      "/prototyping",
+    ],
+  },
+  {
+    type: "category",
+    label: "Development",
+    items: [
+      "/development",
+    ],
+  },
+  {
+    type: "category",
+    label: "Testing",
+    items: [
+      "/testing",
+    ],
+  },
+  {
+    type: "category",
+    label: "Deployment",
+    items: [
+      "/deployment",
+    ],
+  },
+],
 };
 
 export default config;

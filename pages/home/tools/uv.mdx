@@ -1,0 +1,152 @@
+import { Alert, AlertDescription, AlertTitle } from "zudoku/ui/Alert";
+import { CheckCircle2Icon, TerminalIcon } from "lucide-react"
+
+## Environtment
+`uv` adalah package manager Python yang cepat dan digunakan sebagai standar di departemen ini karena praktis, cepat dan open source. Kalo kamu sebelumnya pernah pakai `pip`, `uv` adalah versi supernya dari `pip`.
+Ikuti semua langkah pada halaman ini sebagai *environtment setup*
+### Konsep-konsep penting UV
+Sebelum install, mari pahami konsep-konsep penting:
+##### 1. Package manager
+sama halnya dengan `pip`, `uv` digunakan untuk menginstall maupun uninstall *library* eksternal dengan mudah.
+
+<CodeTabs>
+```bash
+# Dengan pip:
+pip install fastapi
+pip install numpy
+
+# Dengan UV:
+uv add fastapi numpy
+```
+</CodeTabs>
+
+<Callout type="tip" title="UV supremacy!">
+  Coba bandingkan sendiri install beberapa library menggunakan `pip` vs menggunakan `uv` setelah berhasil meginstall uv
+</Callout>
+
+##### 2. Virtual Environtment
+Virtual environment(venv) adalah *sandbox* di computer kamu untuk project tertentu. Kenapa penting?
+
+Misalkan:
+
+- Project A butuh library fastapi versi 2.0
+- Project B butuh library fastapi versi 3.0
+
+Kalau nggak pake virtual env, kedua project bakal conflict. Virtual env solution-nya - each project punya isolated environment sendiri.
+
+`uv` membuat proses pembuatan virtual environtment lebih mudah dan otomatis ketika menginisiasi project baru.
+
+##### 3. Dependency lock
+Lock file adalah snapshot dari semua dependencies project beserta versi exact mereka. Ini penting untuk reproducibility:
+
+- Developer 1 install project → dependencies resolv to specific versions
+- Developer 2 clone project → exact same versions dipake
+
+Bayangkan lock file ibarat resep pasti setiap project.
+
+### Install UV
+
+Refer ke <Link to="https://docs.astral.sh/uv/getting-started/installation/">Official UV Docs</Link> apabila guide dibawah sudah berubah atau tidak bekerja.
+
+1. Buka powershell dan jalankan sebagai Administrator, lalu jalankan perintah berikut:
+<CodeTabs>
+```bash
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+</CodeTabs>
+
+2. Setelah selesai, pastikan uv telah terinstall dengan cara membuka `command prompt` dan jalankan perintah berikut:
+<CodeTabs>
+```cmd
+uv
+```
+</CodeTabs>
+.
+
+<Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-400">
+  <CheckCircle2Icon className="h-4 w-4" />
+  <AlertTitle>Success!</AlertTitle>
+  <AlertDescription>`uv` telah terinstall dan siap digunakan</AlertDescription>
+</Alert>
+<CodeTabs>
+.
+```cmd
+An extremely fast Python package manager.
+
+Usage: uv [OPTIONS] <COMMAND>
+
+Commands:
+...
+```
+</CodeTabs>
+.
+<Alert variant="destructive">
+  <AlertTitle>Failed</AlertTitle>
+  <AlertDescription>`uv` gagal terinstall atau sudah terinstall namun belum ditambahkan ke `PATH`</AlertDescription>
+</Alert>
+<CodeTabs>
+```cmd
+uv : The term 'uv' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the
+spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:1 char:1
++ uv
++ ~~
+    + CategoryInfo          : ObjectNotFound: (uv:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+```
+</CodeTabs>
+
+Coba step berikut untuk solve masalah `uv` belum masuk ke `PATH`
+###### 1. Go to System Properties → Environment Variables
+###### 2. Edit "Path" variable
+###### 3. Add folder di mana UV terinstall
+###### 4. Restart terminal
+
+### Setup Project Menggunakan UV
+##### 1. Buat project baru
+<CodeTabs>
+```bash
+# Navigate ke folder di mana kamu mau buat project
+cd projects
+
+# Buat project baru dengan UV
+uv init my-first-project
+cd my-first-project
+```
+</CodeTabs>
+
+Perintah `uv init`akan otomatis create:
+
+- pyproject.toml - Project configuration, berisi dependencies, deskripsi, version. "resep" project.
+- .venv/ - Virtual environment
+- src/main.py - Python script template
+- .gitignore - Files yang akan diignore oleh git
+
+##### 2. Jalankan Project
+Coba jalankan main script dengan perintah berikut pada terminal
+<CodeTabs>
+```bash
+# Hello from 'project name'
+uv run main.py
+```
+</CodeTabs>
+
+##### 3. Tambahkan dependencies
+Coba tambahkan dependency pada project
+
+<CodeTabs>
+```bash
+uv add numpy
+```
+</CodeTabs>
+
+periksa `pyproject.toml` apabila proses download telah selesai, pada section dependencies akan muncul "numpy>=2.4.3".
+untuk menghilangkan dependency dari project, gunakan
+
+<CodeTabs>
+```bash
+uv remove numpy
+```
+</CodeTabs>
+
+maka numpy akan menghilang dari Dependencies.
