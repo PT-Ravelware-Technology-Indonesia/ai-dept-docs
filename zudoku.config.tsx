@@ -11,7 +11,7 @@ const config: ZudokuConfig = {
   navigation: [
     {
       type: "category",
-      label: "Documentation",
+      label: "Home",
       items: [
         {
           type: "category",
@@ -49,8 +49,28 @@ const config: ZudokuConfig = {
     },
     {
       type: "link",
-      to: "/api",
-      label: "API Reference",
+      label: "Research",
+      to: "/research",
+    },
+    {
+      type: "link",
+      label: "Prototyping",
+      to: "/prototyping",
+    },
+    {
+      type: "link",
+      label: "Development",
+      to: "/development",
+    },
+    {
+      type: "link",
+      label: "Testing",
+      to: "/testing",
+    },
+    {
+      type: "link",
+      label: "Deployment",
+      to: "/deployment",
     },
   ],
   redirects: [{ from: "/", to: "/introduction" }],
