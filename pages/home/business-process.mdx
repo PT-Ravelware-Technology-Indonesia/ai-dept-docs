@@ -10,30 +10,128 @@ Halaman ini menjelaskan alur kerja utama di AI Department, mulai dari permintaan
 Secara umum, proses kerja di AI Department terdiri dari:
 
 ### 1. Request Intake
-Semua pekerjaan dimulai dari kebutuhan bisnis. Secara umum, terdapat setidaknya empat jenis request intake untuk departemen AI dari 3 *main requester*. Form request untuk departemen AI dapat dilihat di <Link to="https://forms.gle/vc8sdASUeFsaPjT6A">AI Request Form</Link>
+Semua pekerjaan dimulai dari kebutuhan bisnis. Form request untuk departemen AI dapat dilihat di <Link to="https://forms.gle/vc8sdASUeFsaPjT6A">AI Request Form</Link>.
 
 ### 2. Riset
-Jenis request yang pertama adalah riset, permintaan ini biasanya datang dari **C-Level** atau **Business Development**. Permintaan riset biasanya
-bertujuan untuk mencari tahu kapabilitas teknis dari suatu ide sehingga bukan suatu riset yang mendalam. Oleh karena itu, riset biasanya 
-hanya memerlukan 2 hingga 4 hari kerja untuk riset informasi, dan 5 - 7 hari kerja untuk riset eksperimen. Contoh permintaan pertanyaan riset:
-*"Bisakah object detection dikembangkan untuk mengukur okupansi toko?"*, *"Berapa volume maksimum dan minimum benda yang bisa diukur depth kamera dari ketinggian tertentu?"*.
-Output dari riset berupa **report**. Gunakan <Link to="https://docs.google.com/document/d/1sLtLpA9QeOQZYJacwBMw-u1pnVL8ODSr5XTYZwGxpwc/edit?usp=sharing">Research report template</Link>
-yang tersedia di tab <Link to="../research">Research Guide</Link>
+|        |   |
+|------------|------|
+| **Tujuan**     | Validasi feasibility teknis |
+| **Requester**  | <Badge variant="default">C-Level</Badge> <Badge variant="default">Bisdev</Badge> |
+| **Durasi**     | 2–7 hari |
+| **Output**     | Report |
+
+<details>
+<summary>Detail</summary>
+:::info
+
+Riset bertujuan menjawab apakah suatu ide memungkinkan secara teknis, bukan membangun solusi final.
+
+:::
+
+Contoh pertanyaan:
+- "Bisakah object detection digunakan untuk mengukur okupansi toko?"
+- "Berapa batas pengukuran depth camera dari ketinggian tertentu?"
+
+Gunakan template berikut untuk report:  
+<Link to="https://docs.google.com/document/d/1sLtLpA9QeOQZYJacwBMw-u1pnVL8ODSr5XTYZwGxpwc/edit?usp=sharing">
+Research Report Template
+</Link>
+
+Panduan lengkap tersedia di <Link to="../research">Research Guide</Link>
+
+</details>
 
 ### 3. Prototyping
-Jenis request yaang kedua adalah prototype, atau biasa kita sebut dengan *Proof of Concept (PoC)* atau juga  *Minimum Viable Product (MVP)*
-adalah suatu konsep, dalam hal ini, aplikasi ataupun script yang menunjukkan bahwa ide atau solusi kita bekerja untuk ditunjukkan ke calon customer
-dan memvalidasi kebutuhan mereka. Kunci penting dari prototyping ini adalah menghasilkan produk dengan fitur seminimal mungkin untuk mendapatkan
-validasi terhadap kebutuhan pengguna semaksimal mungkin. Terdapat dua jenis PoC yang biasa dilakukan, yaitu PoC dan Paid PoC. dari namanya sudah dapat
-terlihat bahwa Paid PoC mengharuskan calon klien untuk membayar untuk bisa menggunakan aplikasi PoC kita untuk durasi tertentu. Oleh karena itu, pendekatan
-pengembangan prototype untuk kedua jenis PoC tersebut berbeda. Lebih lanjut terkait pendekatan pengembangan prototype dapat dilihat di <Link to="../prototyping">Prototyping</Link>
+|        |   |
+|------------|------|
+| **Tujuan**     | Memvalidasi solusi ke user atau calon clien |
+| **Requester**  | <Badge variant="default">C-Level</Badge> <Badge variant="default">Bisdev</Badge> |
+| **Durasi**     | 5–10 hari |
+| **Output**     | Prototype yang dapat didemonstrasikan |
+
+<details>
+<summary>Detail</summary>
+
+:::warning
+
+Prototyping berfokus pada validasi, bukan kesempurnaan.
+
+:::
+
+Karakteristik:
+- Fitur minimal
+- Fokus pada use case utama
+- Cepat dibuat dan diuji
+
+Terdapat dua jenis:
+- PoC (internal validation)
+- Paid PoC (digunakan oleh client dalam periode tertentu)
+
+Pendekatan pengembangan berbeda untuk masing-masing jenis.
+
+Panduan lengkap tersedia di <Link to="../prototyping">Prototyping</Link>
+
+</details>
+
 
 ### 3. Development
-Development mencakup pengembangan produk/project baru, pengembangan fitur baru, hingga testing. Pada proses ini Engineer akan bertanggung jawab terhadap Project/Product Manager.
-Terkait flow, SOP, dan petunjuk development, dapat dilihat di <Link to="../development">Development</Link>
+|        |   |
+|------------|------|
+| **Tujuan**     | Membangun solusi production-ready. |
+| **Requester**  | <Badge variant="default">Project Manager</Badge> <Badge variant="default">Product Manager</Badge> |
+| **Durasi**     | - |
+| **Scope**     | <Badge variant="default">Pengembangan Produk</Badge> <Badge variant="default">Project</Badge> <Badge variant="default">Testing</Badge>|
+| **Output**     | Sistem siap deploy |
+
+<details>
+<summary>Detail</summary>
+
+Pada tahap ini, engineer bekerja berdasarkan requirement yang sudah tervalidasi. Engineer bertanggung jawab kepada Project/Product Manager.
+
+Flow dan SOP dapat dilihat di  
+<Link to="../development">Development</Link>
+
+</details>
 
 ### 4. Deployment
-Deployment di departemen AI umumnya terbagi menjadi dua, yaitu *Cloud Deployment* dan juga *Edge Deployment*. Petunjuk dan juga SOP untuk deployment dapat dilihat di <Link to="../deployment">Deployment</Link>
+|        |   |
+|------------|------|
+| **Tujuan**     | Menyediakan solusi agar dapat digunakan di environment target. |
+| **Scope**     | <Badge variant="default">Cloud Deployment</Badge> <Badge variant="default">Edge Deployment</Badge>|
+| **Output**     | Servis atau aplikasi running |
+
+<details>
+<summary>Detail</summary>
+:::info
+
+Deployment mencakup proses packaging, konfigurasi, dan integrasi dengan sistem lain.
+
+:::
+
+Panduan lengkap mengenai deployment tersedia di <Link to="../deployment">Deployment</Link>
+
+</details>
 
 ### 5. Monitoring & Iteration
-Monitoring dan Iteration mengacu pada hal-hal setelah deployment seperti dokumentasi project, model dan app monitoring, hingga bug fixing. petunjuk serta alur proses monitoring dan iteration dapat dilihat di <Link to="../monitoring">Monitoring</Link>
+|        |   |
+|------------|------|
+| **Tujuan**     |Menjaga performa dan melakukan *continuous improvement*.|
+| **Scope**     | <Badge variant="default">Documentation</Badge> <Badge variant="default">Bug Fixing</Badge><Badge variant="default">Model Monitoring</Badge> <Badge variant="default">App Monitoring</Badge>|
+| **Output**     | Sistem running dengan performa stabil |
+**Tujuan**  
+
+<details>
+<summary>Detail</summary>
+
+Tahap ini berlangsung setelah deployment dan bersifat berkelanjutan.
+
+Mencakup:
+- Monitoring performa model
+- Dokumentasi project
+- Perbaikan bug
+- Iterasi model atau sistem
+
+Panduan lengkap tersedia di  
+<Link to="../monitoring">Monitoring</Link>
+
+</details>

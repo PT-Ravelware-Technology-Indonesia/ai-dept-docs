@@ -1,6 +1,9 @@
 import type { ZudokuConfig } from "zudoku";
 
 const config: ZudokuConfig = {
+  theme: {
+      registryUrl: "https://tweakcn.com/r/themes/cmie97f2b000704l27r9g1p11",
+    },
   site: {
     logo: {
       src: { light: "/logo-light.svg", dark: "/logo-dark.svg" },
@@ -65,7 +68,6 @@ const config: ZudokuConfig = {
               "label": "Business Process",
               "icon": "briefcase-business"
             },
-
           ],
         },
       ],
