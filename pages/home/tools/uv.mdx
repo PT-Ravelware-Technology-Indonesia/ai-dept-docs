@@ -20,9 +20,11 @@ uv add fastapi numpy
 ```
 </CodeTabs>
 
-<Callout type="tip" title="UV supremacy!">
-  Coba bandingkan sendiri install beberapa library menggunakan `pip` vs menggunakan `uv` setelah berhasil meginstall uv
-</Callout>
+:::tip
+
+Coba bandingkan sendiri install beberapa library menggunakan `pip` versus menggunakan `uv` setelah berhasil meginstall uv!
+
+:::
 
 ##### 2. Virtual Environtment
 Virtual environment(venv) adalah *sandbox* di computer kamu untuk project tertentu. Kenapa penting?
@@ -48,105 +50,138 @@ Bayangkan lock file ibarat resep pasti setiap project.
 
 Refer ke <Link to="https://docs.astral.sh/uv/getting-started/installation/">Official UV Docs</Link> apabila guide dibawah sudah berubah atau tidak bekerja.
 
-1. Buka powershell dan jalankan sebagai Administrator, lalu jalankan perintah berikut:
-<CodeTabs>
-```bash
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-</CodeTabs>
+<Stepper>
 
-2. Setelah selesai, pastikan uv telah terinstall dengan cara membuka `command prompt` dan jalankan perintah berikut:
-<CodeTabs>
-```cmd
-uv
-```
-</CodeTabs>
-.
+1. **Download uv**
 
-<Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-400">
-  <CheckCircle2Icon className="h-4 w-4" />
-  <AlertTitle>Success!</AlertTitle>
-  <AlertDescription>`uv` telah terinstall dan siap digunakan</AlertDescription>
-</Alert>
-<CodeTabs>
-.
-```cmd
-An extremely fast Python package manager.
+    Buka powershell dan jalankan sebagai Administrator, lalu jalankan perintah berikut:
 
-Usage: uv [OPTIONS] <COMMAND>
+    <CodeTabs>
+    ```bash
+    powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+    ```
+    </CodeTabs>
 
-Commands:
-...
-```
-</CodeTabs>
-.
-<Alert variant="destructive">
-  <AlertTitle>Failed</AlertTitle>
-  <AlertDescription>`uv` gagal terinstall atau sudah terinstall namun belum ditambahkan ke `PATH`</AlertDescription>
-</Alert>
-<CodeTabs>
-```cmd
-uv : The term 'uv' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the
-spelling of the name, or if a path was included, verify that the path is correct and try again.
-At line:1 char:1
-+ uv
-+ ~~
-    + CategoryInfo          : ObjectNotFound: (uv:String) [], CommandNotFoundException
-    + FullyQualifiedErrorId : CommandNotFoundException
-```
-</CodeTabs>
+2. **Periksa uv**
 
-Coba step berikut untuk solve masalah `uv` belum masuk ke `PATH`
-###### 1. Go to System Properties → Environment Variables
-###### 2. Edit "Path" variable
-###### 3. Add folder di mana UV terinstall
-###### 4. Restart terminal
+    Setelah selesai, pastikan uv telah terinstall dengan cara membuka `command prompt` dan jalankan perintah berikut:
+
+    <CodeTabs>
+    ```cmd
+    uv
+    ```
+    </CodeTabs>
+    
+    .
+
+    <CodeTabs>
+    .
+    ```cmd
+    An extremely fast Python package manager.
+
+    Usage: uv [OPTIONS] <COMMAND>
+
+    Commands:
+    ...
+    ```
+    </CodeTabs>
+    
+    <Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-400">
+      <CheckCircle2Icon className="h-4 w-4" />
+      <AlertTitle>Success!</AlertTitle>
+      <AlertDescription>`uv` telah terinstall dan siap digunakan</AlertDescription>
+    </Alert>
+
+
+    .
+
+
+
+    <CodeTabs>
+    ```cmd
+    uv : The term 'uv' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the
+    spelling of the name, or if a path was included, verify that the path is correct and try again.
+    At line:1 char:1
+    + uv
+    + ~~
+        + CategoryInfo          : ObjectNotFound: (uv:String) [], CommandNotFoundException
+        + FullyQualifiedErrorId : CommandNotFoundException
+    ```
+    </CodeTabs>
+
+        <Alert variant="destructive">
+      <AlertTitle>Failed</AlertTitle>
+      <AlertDescription>`uv` gagal terinstall atau sudah terinstall namun belum ditambahkan ke `PATH`</AlertDescription>
+    </Alert>
+
+  </Stepper>
+
+  Coba step berikut untuk solve masalah `uv` belum masuk ke `PATH`
+
+  <Stepper>
+  1. Go to System Properties → Environment Variables
+  2. Edit "Path" variable
+  3. Add folder di mana UV terinstall
+  4. Restart terminal
+  </Stepper>
 
 ### Setup Project Menggunakan UV
-##### 1. Buat project baru
-<CodeTabs>
-```bash
-# Navigate ke folder di mana kamu mau buat project
-cd projects
 
-# Buat project baru dengan UV
-uv init my-first-project
-cd my-first-project
-```
-</CodeTabs>
+<Stepper>
+1. **Buat project baru**
+    
+    Jalankan perintah berikut di command line
+    
+    <CodeTabs>
+    ```bash
+    # Navigate ke folder di mana kamu mau buat project
+    cd projects
 
-Perintah `uv init`akan otomatis create:
+    # Buat project baru dengan UV
+    uv init my-first-project
+    cd my-first-project
+    ```
+    </CodeTabs>
 
-- pyproject.toml - Project configuration, berisi dependencies, deskripsi, version. "resep" project.
-- .venv/ - Virtual environment
-- src/main.py - Python script template
-- .gitignore - Files yang akan diignore oleh git
+    Perintah `uv init`akan otomatis menghasilkan:
 
-##### 2. Jalankan Project
-Coba jalankan main script dengan perintah berikut pada terminal
-<CodeTabs>
-```bash
-# Hello from 'project name'
-uv run main.py
-```
-</CodeTabs>
+    - pyproject.toml - Project configuration, berisi dependencies, deskripsi, version. "resep" project.
+    - .venv/ - Virtual environment
+    - src/main.py - Python script template
+    - .gitignore - Files yang akan diignore oleh git
 
-##### 3. Tambahkan dependencies
-Coba tambahkan dependency pada project
+2. **Jalankan Project**
 
-<CodeTabs>
-```bash
-uv add numpy
-```
-</CodeTabs>
+    Coba jalankan main script dengan perintah berikut pada terminal
 
-periksa `pyproject.toml` apabila proses download telah selesai, pada section dependencies akan muncul "numpy>=2.4.3".
-untuk menghilangkan dependency dari project, gunakan
+    <CodeTabs>
+    ```bash
+    # Hello from 'project name'
+    uv run main.py
+    ```
+    </CodeTabs>
 
-<CodeTabs>
-```bash
-uv remove numpy
-```
-</CodeTabs>
+3. **Menambahkan dependencies**
 
-maka numpy akan menghilang dari Dependencies.
+    Coba tambahkan dependency pada project
+
+    <CodeTabs>
+    ```bash
+    uv add numpy
+    ```
+    </CodeTabs>
+
+    periksa `pyproject.toml` apabila proses download telah selesai, pada section dependencies akan muncul "numpy>=x.x.x".
+    untuk menghilangkan dependency dari project, gunakan
+
+    <CodeTabs>
+    ```bash
+    uv remove numpy
+    ```
+    </CodeTabs>
+
+    maka numpy akan menghilang dari Dependencies.
+
+4. **Selesai**
+
+</Stepper>
