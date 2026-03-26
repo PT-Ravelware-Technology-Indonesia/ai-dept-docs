@@ -242,6 +242,7 @@ const config: ZudokuConfig = {
     ],
   },
 ],
+  redirects: [{ from: "/", to: "/home/introduction" }],
 };
 
 export default config;
