@@ -30,6 +30,12 @@ const config: ZudokuConfig = {
               "icon": "notebook-pen"
             },
             {
+              "type": "doc",
+              "file": "home/business_process",
+              "label": "Business Process",
+              "icon": "briefcase-business"
+            },
+            {
               "type": "category",
               "label": "Tools",
               "icon": "hammer",
@@ -62,12 +68,6 @@ const config: ZudokuConfig = {
                 }
               ]
             },
-            {
-              "type": "doc",
-              "file": "home/business_process",
-              "label": "Business Process",
-              "icon": "briefcase-business"
-            },
           ],
         },
       ],
@@ -88,7 +88,53 @@ const config: ZudokuConfig = {
               "to": "https://docs.google.com/document/d/1sLtLpA9QeOQZYJacwBMw-u1pnVL8ODSr5XTYZwGxpwc/edit?usp=sharing",
               "label": "Report Template",
               "icon": "file-text"
-            }
+            },
+            {
+              "type":"doc",
+              "file":"research/report_example",
+              "label": "Report Example",
+              "icon": "clipboard"
+            },
+            {
+              "type": "category",
+              "label": "Computer Vision",
+              "collapsible": true,
+              "collapsed": true,
+              "icon": "eye",
+              "items": [
+
+              ]
+            },
+            {
+              "type": "category",
+              "label": "Machine Learning",
+              "collapsible": true,
+              "collapsed": true,
+              "icon": "brain",
+              "items": [
+
+              ]
+            },
+            {
+              "type": "category",
+              "label": "LLMs",
+              "collapsible": true,
+              "collapsed": true,
+              "icon": "bot",
+              "items": [
+
+              ]
+            },
+            {
+              "type": "category",
+              "label": "Business Automation",
+              "collapsible": true,
+              "collapsed": true,
+              "icon": "settings",
+              "items": [
+
+              ]
+            },
           ]
         }
       ],
@@ -104,16 +150,6 @@ const config: ZudokuConfig = {
           "collapsible": true,
           "collapsed": true,
           "icon": "blocks",
-          "items": [
-
-          ]
-        },
-        {
-          "type": "category",
-          "label": "Paid PoC",
-          "collapsible": true,
-          "collapsed": true,
-          "icon": "circle-dollar-sign",
           "items": [
 
           ]

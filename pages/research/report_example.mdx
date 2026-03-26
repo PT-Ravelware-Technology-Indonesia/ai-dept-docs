@@ -1,0 +1,117 @@
+---
+title: AI Research Report
+---
+
+## 1. General Information
+
+- **Title**: PPE Detection
+- **Requester**: C-Level
+- **Author**: Mochamad Arya El Rumy
+- **Date**: 6 Januari 2025
+- **Duration**: 3 Days
+
+## 2. Executive Summary
+
+
+## 3. Background
+Dalam industri manufaktur, keselamatan kerja menjadi tantangan nyata yang dihadapi banyak perusahaan, terutama dalam memastikan kepatuhan pekerja terhadap penggunaan Alat Pelindung Diri (APD) di lingkungan yang penuh risiko seperti penggunaan mesin berat dan paparan bahan berbahaya.
+
+Dari perspektif perusahaan, ketidakpatuhan ini dapat berdampak serius, mulai dari meningkatnya angka kecelakaan kerja, kerugian operasional akibat downtime, hingga risiko hukum dan penurunan reputasi. Meskipun prosedur keselamatan telah diterapkan, pengawasan manual seringkali tidak efektif karena keterbatasan tenaga pengawas, luasnya area kerja, serta potensi human error.
+
+Oleh karena itu, perusahaan membutuhkan solusi yang lebih efisien dan scalable, salah satunya melalui pemanfaatan teknologi kecerdasan buatan (AI) dalam pengenalan objek. Algoritma seperti YOLO (You Only Look Once) menawarkan kemampuan deteksi objek yang cepat dan akurat secara real-time, sehingga dapat digunakan untuk memantau penggunaan APD secara otomatis dan membantu perusahaan meningkatkan standar keselamatan kerja secara lebih konsisten dan efektif.
+
+## 4. Problem Statement
+
+1. Bagaimana mengembangkan model deteksi APD berbasis YOLO yang mampu secara akurat mendeteksi penggunaan APD seperti helm, sepatu safety, dan rompi pada pekerja?
+
+2. Bagaimana mengimplementasikan sistem deteksi otomatis yang dapat memantau kepatuhan pekerja terhadap penggunaan APD secara real-time maupun melalui aset video?
+
+3. Bagaimana mengevaluasi performa model deteksi APD berdasarkan metrik seperti akurasi, penggunaan sumber daya (resource), dan kecepatan pemrosesan?
+
+
+## 5. Scope & Limitations
+
+1. Sistem hanya dapat mendeteksi APD yang terlihat jelas di kamera
+2. Kondisi di lapangan dapat berbeda (kondisi pencahayaan, sudut kamera, atau objek yang menghalangi pandangan) sehingga dapat memengaruhi hasil yang didapatkan.
+3. Dataset yang digunakan terbatas pada lingkungan kerja tertentu dan mungkin tidak mencakup semua variasi jenis APD.
+
+## 6. Approach
+
+Metode yang digunakan adalah melakukan *custom training* model YOLO dengan menggunakan dataset yang tersedia di internet.
+
+## 7. Experiments
+
+### Experiment 1
+- Dataset: https://universe.roboflow.com/chickencounting/hard-hat-6eekm-ws1lj/dataset/1
+- Image_count: 15.241 images
+- Classes: [head, helmet, person]
+- Model: YOLOv11
+#### Image Preprocessing:
+  - Auto-orientation of pixel data (with EXIF-orientation stripping)
+  - Resize to 640x640 (Stretch)
+#### Image Augmentation:
+  - 50% probability of horizontal flip
+  - Equal probability of one of the following 90-degree rotations: none, clockwise, counter-clockwise
+  - Random crop between 0 and 20 percent of the image
+  - Random rotation of between -15 and +15 degrees
+  - Random shear of between -10° to +10° horizontally and -10° to +10° vertically
+  - Random brightness adjustment of between -15 and +15 percent
+  - Random exposure adjustment of between -10 and +10 percent
+  - Salt and pepper noise was applied to 0.1 percent of pixels
+#### Training Settings:
+  - 20 Epochs
+  - batch_size = 16
+
+## 8. Results & Findings
+![Confusion Matrix](/images/confusion_matrix.png)
+
+Berdasarkan confusion matrix di atas hasil yang didapatkan sangat baik khususnya untuk class head dan helmet dimana hanya 
+0,04% yang sebenarnya adalah head namun terdeteksi sebagai helmet. Namun terdapat masalah pada background dan person dimana 99% 
+dari class person terdeteksi sebagai background. Sebanyak 75% background terdeteksi sebagai helmet dan 25% terdeteksi sebagai head.
+
+Terdapat beberapa strategi untuk mendeteksi penggunaan APD di antaranya mengkombinasikan pose estimation dengan object detection, dan custom object detection dengan mendefinisikan kelas 'helm' hanya ketika helm tersebut dipakai, begitu pula dengan equipment lainnya, terdapat beberapa pros and cons untuk masing masing metode.
+
+Pose Estimation + Object Detection:
+- Pros : 
+    Dapat lebih akurat mendeteksi penggunaan APD dengan menghitung jarak antara object dan key points tubuh untuk memastikan helm ataupun benda lainnya benar benar digunakan sehingga dapat mereduksi false positif maupun false negatif
+    Sudah banyak model cukup baik yang tersedia untuk object detection dan pose estimation
+- Cons : 
+    Penggunaan resource yang cukup besar karena menggunakan dua model sekaligus
+
+Skenario rekomendasi:
+Di gate, 1 orang per scene/frame 
+
+Full Custom Object Detection:
+- Pros : 
+    resources lebih sedikit karena hanya menggunakan satu model
+    Dapat bekerja di scene dengan banyak orang sekaligus di dalam scene/frame
+
+- Cons :
+    Proses labeling dan data gatehring dan cleaning harus dilakukan sendiri
+    False positif dan False Negatif tidak dapat diprediksi tapi kemungkinan nilainya tinggi
+
+Skenario rekomendasi:
+Monitoring seperti cctv, >1 orang per scene
+## 9. Evaluation
+![confidence curve](/images/f1_confidence.png)
+
+Dari kurva di atas class helmet dan head cukup baik diddeteksi namun, class person sangat buruk, kemungkinan data training bermasalah.
+Dari hasil inference terlihat tidak stabil sesuai dengan report dari confussion matrix.
+## 10. Conclusion
+Secara konsep, meng-anotasi class helmet dengan bagian kepala adalah langkah yang cukup efektif untuk mengatasi masalah 
+pendeteksian penggunaan helm. Pada dataset ini terdapat 3 class yaitu head, helmet, dan person, 3 class ini cukup untuk pendeteksian 
+penggunaan helm, akan tetapi banyaknya kelas 'person' sangat sedikit di dalam dataset sehingga kurang terepresentasi dan menghasilkan 
+model yang kurang baik.
+
+## 11. Recommendation
+
+- membuat dan mengkurasi dataset sendiri agar kualitasnya baik.
+- Tambahkan dataset dari perspektif cctv atau overhead
+
+## 12. Risks & Limitations
+- Dataset yang dapat diakses di internet sangat terbatas dan kurang beragam
+- Perbedaan standard PPE dapat memengaruhi akurasi
+
+## 13. Appendix (Optional)
+<Link to="https://app.roboflow.com/rumy/ppe-model-lnvgu/models">Project link</Link>
+
