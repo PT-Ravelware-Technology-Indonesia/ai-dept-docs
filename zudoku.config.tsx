@@ -50,8 +50,8 @@ const config: ZudokuConfig = {
                 },
                 {
                   "type": "doc",
-                  "file": "home/tools/github",
-                  "label": "GitHub",
+                  "file": "home/tools/loguru",
+                  "label": "Loguru",
                   "icon": "bolt"
                 },
                 {
@@ -155,12 +155,6 @@ const config: ZudokuConfig = {
               "file": "development/observability",
               "label": "Observability",
               "icon": "search-check",
-            },
-            {
-              "type": "doc",
-              "label": "Security",
-              "file": "development/security",
-              "icon": "shield-check",
             },
             {
               "type": "doc",

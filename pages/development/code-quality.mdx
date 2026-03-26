@@ -1,5 +1,5 @@
 ---
-title: Code Quality
+title: Code Quality Guide
 ---
 
 Dokumen ini menjelaskan standar code quality untuk seluruh project Python di AI Department. 
@@ -231,3 +231,88 @@ Tujuan penggunaan linting dan formatting adalah untuk memastikan konsistensi kod
 
 Refer ke <Link to="../home/tools/ruff">Ruff</Link> untuk petunjuk installasi dan penggunaan `Ruff`.
 
+### Error Handling
+Error handling merupakan hal yang `wajib` di setiap code untuk membuat program yang *robust*, mudah di-debug, dan *reliable*.
+
+#### Tujuan
+
+- Mencegah system crash yang tidak terkontrol  
+- Mempermudah debugging dan observability  
+- Memberikan feedback yang jelas ke caller atau user  
+- Menjaga reliability sistem 
+
+#### Prinsip Utama
+
+- **Fail explicitly** → Jangan silent error  
+- **Log semua error penting**  
+- **Tangani error di level yang tepat**  
+- **Jangan menyembunyikan error**  
+- **Gunakan exception yang spesifik** 
+
+#### Try-Except Blocks
+**Selalu** handle exceptions dengan proper try-except.
+
+```python
+# Bare except - catch semua, termasuk SystemExit!
+try:
+    result = 10 / 0
+except:
+    print("Error")  # Nggak tahu error apa
+```
+<Callout type="danger">
+Bare except, tidak jelas.
+</Callout>
+
+```python
+# Specific exception
+try:
+    result = 10 / 0
+except ZeroDivisionError as e:
+    print(f"Division by zero: {e}")
+except ValueError as e:
+    print(f"Value error: {e}")
+except Exception as e:
+    print(f"Unexpected error: {e}")
+    raise  # Re-raise kalau nggak bisa handle
+```
+<Callout type="tip">
+Good, exception jelas.
+</Callout>
+
+#### Custom Exceptions
+Custom exceptions untuk domain-specific errors.
+
+```python
+# Pakai generic Exception
+def validasi_pembayaran(nominal: float) -> None:
+    if nominal <= 0:
+        raise Exception("Nominal harus positif")
+    if nominal > 1000000:
+        raise Exception("Nominal terlalu besar")
+```
+<Callout type="danger">
+Generic Exception.
+</Callout>
+
+```python
+# Custom exceptions
+class ValidationError(Exception):
+    """Error untuk validasi data."""
+    pass
+
+class PaymentError(Exception):
+    """Error untuk payment processing."""
+    def __init__(self, message: str, code: str) -> None:
+        self.message = message
+        self.code = code
+        super().__init__(self.message)
+
+def validasi_pembayaran(nominal: float) -> None:
+    if nominal <= 0:
+        raise ValidationError("Nominal harus positif")
+    if nominal > 1000000:
+        raise PaymentError("Nominal terlalu besar", "LIMIT_EXCEEDED")
+```
+<Callout type="tip">
+Good, custom exception lebih mudah dipahami.
+</Callout>

@@ -1,0 +1,100 @@
+---
+title: Observability Guide
+---
+
+Dokumen ini menjelaskan standar observability general untuk seluruh sistem di AI Department. 
+Observability mencakup logging, metrics, dan tracing yang memungkinkan sistem dapat dipantau, dianalisis, dan di-debug dengan efektif.
+masing-masing fokus seperti computer vision dan LLMs memiliki standard observability khusus yang dapat dilihat di halaman observability masing-masing fokus.
+
+## Tujuan
+
+Observability bertujuan untuk:
+
+- Memahami kondisi sistem secara real-time  
+- Mempermudah debugging dan incident investigation  
+- Mendeteksi masalah lebih awal  
+- Menjaga reliability dan performance sistem  
+
+---
+
+## Prinsip Utama
+
+- **Everything important is observable**  
+- **Structured over unstructured**  
+- **Context is critical**  
+- **Debuggable without reproducing locally**  
+- **Consistent across all services**  
+
+---
+
+## Komponen Observability
+
+Observability terdiri dari tiga komponen utama:
+
+| Komponen | Fungsi |
+|----------|--------|
+| Logging  | Mencatat event dan error |
+| Metrics  | Mengukur performa sistem |
+| Tracing  | Melacak alur request |
+
+---
+
+## Logging
+Ai departemen menggunakan <Link to="../home/tools/loguru">loguru</Link> sebagai standard tool untuk logging.
+
+### Logging dengan Context
+Semua log penting harus memiliki context:
+```python
+from loguru import logger
+
+logger.bind(
+    request_id="123",
+    service="inference",
+    model_version="v1"
+).info("Inference started")
+```
+### Output Behaviour
+
+| Environment | Format        |
+| ----------- | ------------- |
+| Development | Readable text |
+| Production  | JSON          |
+
+### Level Logging
+
+| Level | Penggunaan |
+|-------|------------|
+| <Badge className="bg-[oklch(0.5144_0.1605_267.4400)] text-[oklch(0.9700_0.0140_254.6040)]">DEBUG</Badge> | Informasi detail untuk debugging |
+| <Badge className="bg-[oklch(0.6_0.2_142)] text-white">INFO</Badge> | Event normal |
+| <Badge className="bg-[oklch(0.8_0.15_85)] text-[oklch(0.2500_0_0)]">WARNING</Badge> | Potensi masalah |
+| <Badge className="bg-[oklch(0.5800_0.2200_27)] text-[oklch(0.9700_0.0140_254.6040)]">ERROR</Badge> | Error yang terjadi |
+| <Badge className="bg-[oklch(0.7040_0.1910_22.2160)] text-[oklch(0.9700_0.0140_254.6040)]">CRITICAL</Badge> | System failure |
+
+<Callout type="danger">
+  Jangan log data sensitif
+</Callout>
+
+```python
+# Bad
+logger.info("User login: email=%s, password=%s, token=%s", email, password, token)
+
+# Good
+logger.info("User login: email=%s, user_id=%s", email, user_id)
+```
+## Metrics
+Metrics digunakan untuk memonitor performa sistem.
+
+Contoh Metrics: 
+- Request count
+- Latency
+- Error rate
+- Model accuracy (AI-specific)
+
+## Tracing
+
+Tracing digunakan untuk melacak alur request antar service.
+
+Use Case: 
+- Debug latency
+- Mengetahui bottleneck
+- Memahami flow kompleks

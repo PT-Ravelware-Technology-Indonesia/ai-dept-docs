@@ -1,0 +1,89 @@
+## Loguru
+<Link to="https://github.com/Delgan/loguru?tab=readme-ov-file">Loguru</Link> merupakan library untuk logging yang menjadi tool standar di departemen AI.
+
+## Install Ruff
+`Loguru` dapat diinstall menggunakan <Link to="../home/tools/uv">uv</Link>.
+```bash
+uv add loguru
+```
+
+## Konfigurasi Standard
+Untuk memudahkan logging, gunakan konfigurasi berikut sebagai standar, sesuaikan dengan kebutuhan.
+```python title="logger_settings.py"
+from loguru import logger
+from pydantic_settings import BaseSettings, SettingsConfigDict
+import sys
+
+
+class LoggerSettings(BaseSettings):
+    # Environment
+    environment: str = "development"  # development | production
+
+    # General
+    level: str = "INFO"
+
+    # File logging
+    file_enabled: bool = True
+    file_path: str = "logs/app.log"
+    file_rotation: str = "10 MB"
+    file_retention: str = "30 days"
+    file_compression: str | None = None
+
+    # Console logging
+    console_enabled: bool = True
+    console_colorize: bool = True
+
+    # Advanced
+    enqueue: bool = True  # thread & async safe
+
+    model_config = SettingsConfigDict(
+        env_prefix="LOGGER_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    def is_production(self) -> bool:
+        return self.environment == "production"
+
+    def setup_logger(self) -> None:
+        logger.remove()
+
+        # Console
+        if self.console_enabled:
+            logger.add(
+                sys.stdout,
+                level=self.level,
+                colorize=not self.is_production(),
+                serialize=self.is_production(),  # JSON untuk production
+                backtrace=not self.is_production(),
+                diagnose=not self.is_production(),
+                enqueue=self.enqueue,
+            )
+
+        # File
+        if self.file_enabled:
+            file_config = {
+                "sink": self.file_path,
+                "level": self.level,
+                "rotation": self.file_rotation,
+                "retention": self.file_retention,
+                "enqueue": self.enqueue,
+                "serialize": True,  # selalu JSON untuk file
+                "backtrace": False,
+                "diagnose": False,
+            }
+
+            if self.file_compression:
+                file_config["compression"] = self.file_compression
+
+            logger.add(**file_config)
+```
+
+Cara pakai
+
+```python
+from app.core.logger import LoggerSettings
+```
+

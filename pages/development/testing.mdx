@@ -1,0 +1,64 @@
+---
+title: Testing Guide
+---
+
+Dokumen ini menjelaskan standar testing untuk seluruh project Python di AI Department. Testing bertujuan untuk memastikan kode berjalan dengan benar, mencegah regresi.
+
+---
+
+## Tujuan
+
+Testing digunakan untuk:
+
+- Memastikan logic berjalan sesuai harapan  
+- Mencegah bug saat perubahan kode  
+- Mempermudah refactoring  
+- Menjamin reliability sistem  
+
+---
+
+## Prinsip Utama
+
+- **Test behavior, bukan implementasi**
+- **Test yang penting dulu, bukan semuanya**
+- **Cepat dan deterministic**
+- **Mudah dibaca dan dipahami**
+- **Consistent di semua project**
+
+---
+
+## Unit Test
+
+Menguji logic kecil secara terisolasi.
+
+- Tanpa dependency eksternal
+- Cepat dijalankan
+- Fokus pada function atau class
+
+```python
+import pytest
+
+# Simple test function
+def test_user_name():
+    user = User("Indra", "indra@example.com")
+    assert user.name == "Indra"
+
+# With fixtures
+@pytest.fixture
+def user():
+    return User("Indra", "indra@example.com")
+
+def test_user_email(user):
+    assert user.email == "indra@example.com"
+```
+
+---
+
+## Integration Test
+
+Menguji alur antar komponen.
+
+- Bisa melibatkan database, API, atau file system
+- Memastikan komponen bekerja bersama dengan benar
+
+---
