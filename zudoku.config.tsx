@@ -56,7 +56,7 @@ const config: ZudokuConfig = {
                 },
                 {
                   "type": "doc",
-                  "file": "home/tools/roo-code",
+                  "file": "home/tools/roo_code",
                   "label": "Roo Code",
                   "icon": "bolt"
                 }
@@ -64,7 +64,7 @@ const config: ZudokuConfig = {
             },
             {
               "type": "doc",
-              "file": "home/business-process",
+              "file": "home/business_process",
               "label": "Business Process",
               "icon": "briefcase-business"
             },
@@ -134,13 +134,13 @@ const config: ZudokuConfig = {
           "items": [
             {
               "type": "doc",
-              "file": "development/project-structure",
+              "file": "development/project_structure",
               "label": "Project Structure",
               "icon": "brick-wall"
             },
             {
               "type": "doc",
-              "file": "development/code-quality",
+              "file": "development/code_quality",
               "label": "Code Quality",
               "icon": "square-check-big"
             },
@@ -164,7 +164,7 @@ const config: ZudokuConfig = {
             },
             {
               "type": "doc",
-              "file": "development/data-management",
+              "file": "development/data_management",
               "label": "Data Management",
               "icon": "database"
             },
@@ -252,7 +252,7 @@ const config: ZudokuConfig = {
     type: "category",
     label: "Monitoring & Iteration",
     items: [
-      "/monitoring-iteration",
+      "/monitoring_iteration",
       {
         "type": "category",
         "label": "Documentation",
@@ -266,6 +266,33 @@ const config: ZudokuConfig = {
       {
         "type": "category",
         "label": "Bug Fixing",
+        "collapsible": true,
+        "collapsed": true,
+        "icon": "bug",
+        "items": [
+
+        ]
+      },
+    ],
+    },
+    {
+    type: "category",
+    label: "Project Documentation",
+    items: [
+      "/project_documentation",
+      {
+        "type": "category",
+        "label": "Project 1",
+        "collapsible": true,
+        "collapsed": true,
+        "icon": "book",
+        "items": [
+
+        ]
+      },
+      {
+        "type": "category",
+        "label": "Project 2",
         "collapsible": true,
         "collapsed": true,
         "icon": "bug",
