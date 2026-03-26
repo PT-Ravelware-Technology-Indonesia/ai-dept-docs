@@ -1,0 +1,43 @@
+## Ruff
+<Link to="https://docs.astral.sh/ruff/">Ruff</Link> merupakan linter dan formatter untuk `Python`. Semua project **wajib** menggunakan Ruff
+untuk memastikan konsistensi kode, mengurangi error, dan meningkatkan readability secara otomatis.
+
+## Install Ruff
+`Ruff` dapat diinstall menggunakan <Link to="../home/tools/uv">uv</Link>.
+```bash
+# Install Ruff globally.
+uv tool install ruff@latest
+
+# Install ruff ke project.
+uv add --dev ruff
+```
+
+Setelah diinstall, ruff dapat dijalankan dari `command line`
+```bash
+ruff check # Lint all files in the current directory.
+ruff format # Format all files in the current directory.
+
+#bisa juga dari uv
+uv run ruff check
+uv run ruff format
+```
+
+## Konfigurasi Ruff di Project
+Basic configuration untuk setiap project, tambahkan konfigurasi berikut di `pyproject.toml`
+```code
+[tool.ruff]
+line-length = 88
+lint.select = [
+    "E",
+    "W",
+    "F",
+    "I"
+]
+lint.ignore = ["E501"]
+```
+
+### Best Practices
+- Jalankan `ruff` format sebelum commit
+- Gunakan auto-fix untuk mempercepat development
+- Jangan mengabaikan error lint tanpa memahami penyebabnya
+- Pastikan semua file konsisten sebelum membuat pull request

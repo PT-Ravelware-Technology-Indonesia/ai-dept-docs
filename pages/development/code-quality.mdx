@@ -1,0 +1,233 @@
+---
+title: Code Quality
+---
+
+Dokumen ini menjelaskan standar code quality untuk seluruh project Python di AI Department. 
+Tujuan utama dari standar ini adalah memastikan kode yang dibuat memiliki kualitas tinggi, mudah dipahami, *maintainable*, dan dapat direproduksi.
+
+---
+
+## Prinsip Utama
+
+Semua kode harus mengikuti prinsip berikut:
+
+- **Readability** → Mudah dibaca dan dipahami oleh orang lain  
+- **Maintainability** → Mudah diubah tanpa membuat sistem *break*  
+- **Reproducibility** → Dapat diduplikasi atau diulang dengan kondisi yang sama  
+- **Consistency** → Mengikuti standar yang sama di semua project  
+
+---
+## Code Style
+
+### Naming Convention
+:::tip
+Selalu gunakan *meaningful naming* untuk setiap module, variable, function ataupun class. 
+Artinya, dari membaca namanya saja orang yang baru membacanya tahu tujuan dari dibuatnya module, variable, function ataupun class tersebut.
+:::
+
+```python title="naming_convention.py"
+#Bad
+def cal(a, b):
+	return a + b
+	
+#Good
+def calculate_total_price(price, tax):
+	return price + tax
+```
+
+#### Class Name
+
+- Gunakan `PascalCase`
+- Umumnya menggunakan kata benda atau noun
+```python title="class.py"
+class MQTTHandler
+```
+
+#### Fucntion and Variables
+
+- Gunakan `snake_case`
+- Umumnya menggunakan kata kerja untuk fungsi
+
+```python title="function.py"
+#function
+def publish_mqtt():
+	pass
+	
+#variables
+user_name = "Joh Doe"
+```
+
+- Gunakan typehint untuk code yang lebih mudah dibaca dan dipahami
+```python title="typehint.py"
+#bad
+def hitung_total(harga, jumlah):
+    return harga * jumlah
+
+def ambil_user(id):
+    return database.find(id)
+
+#good
+def hitung_total(harga: float, jumlah: int) -> float:
+    return harga * jumlah
+
+def ambil_user(user_id: int) -> dict[str, any] | None:
+    return database.find(user_id)
+```
+:::tip
+Selalu pakai type hints untuk function parameters dan return types
+:::
+
+#### Constant
+- gunakan `UPPER_CASE`
+```python title="constant.py"
+MAX_RETRIES = 5
+CONFIDENCE_LEVEL = 0.7
+```
+### Docstring
+
+Docstring digunakan untuk:
+
+- Menjelaskan `fungsi` dan `class`
+- Membantu developer lain memahami kode dengan cepat
+- Mendukung maintainability dan kolaborasi
+- Mempermudah integrasi dengan tools dokumentasi
+
+#### Prinsip penulisan Docstring
+- **Jelas dan singkat** → Hindari penjelasan bertele-tele  
+- **Menjelaskan "why", bukan hanya "what"**  
+- **Konsisten di seluruh project**  
+- **Selalu update jika kode berubah**  
+
+#### When to use
+
+- Semua **public function**
+- Semua **class**
+- Function kompleks (walaupun private)
+
+#### Tidak wajib untuk
+- Function kecil yang sangat jelas
+- Helper sederhana (kecuali membingungkan)
+
+#### Format Standar
+
+Gunakan format <Link to="https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html">Google Style Docstring</Link>
+
+---
+
+#### Function Docstring
+
+```python title="function_docstring.py"
+def calculate_average(values: list[float]) -> float:
+    """
+    Calculate the average value from a list of numbers.
+
+    Args:
+        values (list[float]): List of numeric values.
+
+    Returns:
+        float: The average value. Returns 0.0 if the list is empty.
+    """
+    if not values:
+        return 0.0
+    return sum(values) / len(values)
+```
+```python title="with_exception.py"
+def divide(a: float, b: float) -> float:
+    """
+    Divide two numbers.
+
+    Args:
+        a (float): Numerator.
+        b (float): Denominator.
+
+    Returns:
+        float: Result of division.
+
+    Raises:
+        ValueError: If b is zero.
+    """
+    if b == 0:
+        raise ValueError("Division by zero")
+    return a / b
+```
+```python title="class_docstring.py"
+class UserService:
+    """
+    Service class for handling user-related operations.
+
+    This class provides methods to manage user data, including
+    creation, retrieval, and validation.
+    """
+
+    def get_user(self, user_id: str) -> dict:
+        """
+        Retrieve user data by ID.
+
+        Args:
+            user_id (str): Unique identifier of the user.
+
+        Returns:
+            dict: User data.
+        """
+        ...
+```
+
+#### Aturan Penulisan
+- Gunakan bahasa Inggris
+- Gunakan kalimat deskriptif, bukan keyword
+- Gunakan titik di akhir deskripsi
+- Gunakan indentasi yang konsisten
+- Gunakan triple double quotes `"""`
+
+#### Struktur Wajib
+
+Untuk function:
+- Deskripsi singkat
+- `Args`
+- `Returns`
+- `Raises` (jika ada)
+
+#### Anti-Patterns (Hindari)
+<Callout type="danger">
+  Mengulang nama function
+</Callout>
+  ```python
+def get_user():
+    """Get user."""
+  ```
+
+<Callout type="danger">
+  Tidak menjelaskan behaviour
+</Callout>
+  ```python
+def process(data):
+    """Process data."""
+  ```
+
+<Callout type="danger">
+  Tidak update docstring ketika parameter atau return value berubah
+</Callout>
+
+#### Best Practice
+
+- Jelaskan edge case penting
+- Jelaskan default behavior
+- Gunakan docstring untuk menjelaskan constraint
+
+```python
+def normalize(values: list[float]) -> list[float]:
+    """
+    Normalize values to range [0, 1].
+
+    If all values are equal, returns a list of zeros.
+    """
+    ...
+```
+---
+
+### Linting & Formatting
+Semua project Python wajib menggunakan <Link to="../home/tools/ruff">Ruff</Link> sebagai linter dan formatter utama.
+Tujuan penggunaan linting dan formatting adalah untuk memastikan konsistensi kode, mengurangi error, dan meningkatkan readability secara otomatis.
+
+Refer ke <Link to="../home/tools/ruff">Ruff</Link> untuk petunjuk installasi dan penggunaan `Ruff`.
+

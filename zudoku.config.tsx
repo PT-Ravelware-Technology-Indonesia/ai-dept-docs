@@ -10,7 +10,7 @@ const config: ZudokuConfig = {
       alt: "Zudoku",
       width: "130px",
     },
-  },
+    },
   navigation: [
     {
       type: "category",
@@ -45,7 +45,7 @@ const config: ZudokuConfig = {
                 {
                   "type": "doc",
                   "file": "home/tools/ruff",
-                  "label": "ruff",
+                  "label": "Ruff",
                   "icon": "bolt"
                 },
                 {
@@ -92,128 +92,168 @@ const config: ZudokuConfig = {
           ]
         }
       ],
-  },
-  {
-    type: "category",
-    label: "Prototyping",
-    items: [
-      "/prototyping",
-      {
-        "type": "category",
-        "label": "PoC",
-        "collapsible": true,
-        "collapsed": true,
-        "icon": "blocks",
-        "items": [
+    },
+    {
+      type: "category",
+      label: "Prototyping",
+      items: [
+        "/prototyping",
+        {
+          "type": "category",
+          "label": "PoC",
+          "collapsible": true,
+          "collapsed": true,
+          "icon": "blocks",
+          "items": [
 
-        ]
-      },
-      {
-        "type": "category",
-        "label": "Paid PoC",
-        "collapsible": true,
-        "collapsed": true,
-        "icon": "circle-dollar-sign",
-        "items": [
+          ]
+        },
+        {
+          "type": "category",
+          "label": "Paid PoC",
+          "collapsible": true,
+          "collapsed": true,
+          "icon": "circle-dollar-sign",
+          "items": [
 
-        ]
-      }
-    ],
-  },
-  {
-    type: "category",
-    label: "Development",
-    items: [
-      "/development",
-      {
-        "type": "category",
-        "label": "Development Standard",
-        "collapsible": true,
-        "collapsed": true,
-        "icon": "code",
-        "items": [
+          ]
+        }
+      ],
+    },
+    {
+      type: "category",
+      label: "Development",
+      items: [
+        "/development",
+        {
+          "type": "category",
+          "label": "Core Standard",
+          "collapsible": true,
+          "collapsed": false,
+          "icon": "code",
+          "items": [
+            {
+              "type": "doc",
+              "file": "development/project-structure",
+              "label": "Project Structure",
+              "icon": "brick-wall"
+            },
+            {
+              "type": "doc",
+              "file": "development/code-quality",
+              "label": "Code Quality",
+              "icon": "square-check-big"
+            },
+            {
+              "type": "doc",
+              "file": "development/testing",
+              "label": "Testing",
+              "icon": "flask-conical",
+            },
+            {
+              "type": "doc",
+              "file": "development/observability",
+              "label": "Observability",
+              "icon": "search-check",
+            },
+            {
+              "type": "doc",
+              "label": "Security",
+              "file": "development/security",
+              "icon": "shield-check",
+            },
+            {
+              "type": "doc",
+              "file": "development/integration",
+              "label": "Integration",
+              "icon": "unplug",
+            },
+            {
+              "type": "doc",
+              "file": "development/data-management",
+              "label": "Data Management",
+              "icon": "database"
+            },
+          ]
+        },
+        {
+          "type": "category",
+          "label": "Focused Standard",
+          "collapsible": true,
+          "collapsed": true,
+          "icon": "code",
+          "items": [
+            {
+          "type": "category",
+          "label": "Computer Vision",
+          "collapsible": true,
+          "collapsed": true,
+          "icon": "eye",
+          "items": [
 
-        ]
-      },
-      {
-        "type": "category",
-        "label": "Computer Vision",
-        "collapsible": true,
-        "collapsed": true,
-        "icon": "eye",
-        "items": [
+          ]
+        },
+        {
+          "type": "category",
+          "label": "Machine Learning",
+          "collapsible": true,
+          "collapsed": true,
+          "icon": "brain",
+          "items": [
 
-        ]
-      },
-      {
-        "type": "category",
-        "label": "Machine Learning",
-        "collapsible": true,
-        "collapsed": true,
-        "icon": "brain",
-        "items": [
+          ]
+        },
+        {
+          "type": "category",
+          "label": "LLMs",
+          "collapsible": true,
+          "collapsed": true,
+          "icon": "bot",
+          "items": [
 
-        ]
-      },
-      {
-        "type": "category",
-        "label": "Large Language Models",
-        "collapsible": true,
-        "collapsed": true,
-        "icon": "bot",
-        "items": [
+          ]
+        },
+        {
+          "type": "category",
+          "label": "Business Automation",
+          "collapsible": true,
+          "collapsed": true,
+          "icon": "settings",
+          "items": [
 
-        ]
-      },
-      {
-        "type": "category",
-        "label": "Business Automation",
-        "collapsible": true,
-        "collapsed": true,
-        "icon": "settings",
-        "items": [
+          ]
+        },
+          ]
+        },
+      ],
+    },
+    {
+      type: "category",
+      label: "Deployment",
+      items: [
+        "/deployment",
+        {
+          "type": "category",
+          "label": "Edge Deployment",
+          "collapsible": true,
+          "collapsed": true,
+          "icon": "cpu",
+          "items": [
 
-        ]
-      },
-      {
-        "type": "category",
-        "label": "Testing",
-        "collapsible": true,
-        "collapsed": true,
-        "icon": "flask-conical",
-        "items": [
+          ]
+        },
+        {
+          "type": "category",
+          "label": "Cloud Deployment",
+          "collapsible": true,
+          "collapsed": true,
+          "icon": "cloud",
+          "items": [
 
-        ]
-      },
-    ],
-  },
-  {
-    type: "category",
-    label: "Deployment",
-    items: [
-      "/deployment",
-      {
-        "type": "category",
-        "label": "Edge Deployment",
-        "collapsible": true,
-        "collapsed": true,
-        "icon": "cpu",
-        "items": [
-
-        ]
-      },
-      {
-        "type": "category",
-        "label": "Cloud Deployment",
-        "collapsible": true,
-        "collapsed": true,
-        "icon": "cloud",
-        "items": [
-
-        ]
-      },
-    ],
-  },
+          ]
+        },
+      ],
+    },
     {
     type: "category",
     label: "Monitoring & Iteration",
@@ -240,9 +280,10 @@ const config: ZudokuConfig = {
         ]
       },
     ],
-  },
-],
-  redirects: [{ from: "/", to: "/home/introduction" }],
+    },
+    ],
+  redirects: [
+    { from: "/", to: "/home/introduction" }],
 };
 
 export default config;
