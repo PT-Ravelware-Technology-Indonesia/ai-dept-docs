@@ -1,7 +1,9 @@
 ---
 title: AI Research Report
 ---
-
+:::tip
+Idealnya, report hanya 3 - 5 halaman.
+:::
 ## 1. General Information
 
 - **Title**: PPE Detection
@@ -11,6 +13,17 @@ title: AI Research Report
 - **Duration**: 3 Days
 
 ## 2. Executive Summary
+
+Penelitian ini bertujuan untuk mengevaluasi kelayakan penggunaan teknologi AI dalam mendeteksi kepatuhan 
+penggunaan Alat Pelindung Diri (APD) di industri manufaktur. Pendekatan yang digunakan adalah melatih model 
+deteksi objek berbasis YOLO menggunakan dataset publik untuk mendeteksi objek seperti helm, kepala, dan pekerja 
+dari gambar maupun video. Hasil eksperimen menunjukkan bahwa model cukup akurat dalam mendeteksi helm dan kepala, 
+namun masih lemah dalam mengenali pekerja (person), yang berdampak pada ketidakstabilan hasil deteksi secara keseluruhan. 
+Temuan ini menunjukkan bahwa kualitas dan keseimbangan dataset sangat berpengaruh terhadap performa model. 
+Selain itu, terdapat dua pendekatan utama yang dapat digunakan, yaitu kombinasi pose estimation dengan object 
+detection untuk akurasi lebih tinggi, atau custom object detection untuk efisiensi resource. Secara keseluruhan, 
+teknologi ini memiliki potensi besar untuk meningkatkan pengawasan keselamatan kerja secara otomatis. Rekomendasi 
+utama adalah mengembangkan dan mengkurasi dataset sendiri yang lebih representatif terhadap kondisi nyata di lapangan.
 
 
 ## 3. Background

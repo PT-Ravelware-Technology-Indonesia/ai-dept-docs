@@ -81,7 +81,7 @@ const config: ZudokuConfig = {
           "type": "category",
           "label": "Research Guide",
           "collapsible": true,
-          "collapsed": true,
+          "collapsed": false,
           "items": [
             {
               "type": "link",
@@ -96,44 +96,29 @@ const config: ZudokuConfig = {
               "icon": "clipboard"
             },
             {
-              "type": "category",
+              "type": "doc",
+              "file": "research/computer_vision_research",
               "label": "Computer Vision",
-              "collapsible": true,
-              "collapsed": true,
-              "icon": "eye",
-              "items": [
-
-              ]
+              "icon": "eye"
             },
             {
-              "type": "category",
+              "type": "doc",
+              "file": "research/machine_learning_research",
               "label": "Machine Learning",
-              "collapsible": true,
-              "collapsed": true,
               "icon": "brain",
-              "items": [
 
-              ]
             },
             {
-              "type": "category",
+              "type": "doc",
+              "file":"research/llms_research",
               "label": "LLMs",
-              "collapsible": true,
-              "collapsed": true,
-              "icon": "bot",
-              "items": [
-
-              ]
+              "icon": "bot"
             },
             {
-              "type": "category",
+              "type": "doc",
+              "file": "research/business_automation",
               "label": "Business Automation",
-              "collapsible": true,
-              "collapsed": true,
-              "icon": "settings",
-              "items": [
-
-              ]
+              "icon": "settings"
             },
           ]
         }
