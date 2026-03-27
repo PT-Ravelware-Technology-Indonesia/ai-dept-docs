@@ -1,0 +1,74 @@
+---
+title: "Definig The Problem"
+---
+    
+Semua software ada untuk menyelesaikan masalah, akan tetapi seringkali software atau solusi gagal karena menyelesaikan masalah yang salah.
+Software dengan code yang rapi, arsitektur yang solid, dan robust menjadi tidak berguna ketika tidak menyelesaikan masalah user.
+Oleh karena itu, bagian pertama, yaitu perumusan masalah sangat krusial dan memerlukan proses berpikir yang cukup mendalam.
+
+## **The Solutioning Trap**
+
+Seringkali kita sebagai engineer langsung berpikir mengenai solusi teknis. "Oh, bisa pake OCR aja!" inilah yang dinamakan *solutioning trap*.
+Kita langsung lompat ke solusi sebelum benar-benar paham masalahnya. Walaupun, seringkali kita langsung menerima inquiries dari `requester`, 
+apabila kita memahami ini, kita bisa berdiskusi dan men-*challenge* ide atau solusi requester agar dapat menyelesaikan masalah yang sebenarnya.
+
+Cara untuk menghindari *solutioning trap* ini adalah dengan menjadi kritis dan bertanya lebih dalam:
+
+- "Masalah apa yang paling bikin pusing sekarang?"
+- "Sekarang manage inventory-nya gimana?"
+- "Apa yang paling sering salah?"
+- "Kalau masalah ini nggak diselesaikan, dampaknya apa?"
+
+Cobalah untuk mendengarkan terlebih dahulu sebelum mengajukan solusi. Seringkali, end user sendiri pun gagal mengidentifikasi masalah mereka dan langsung
+mengajukan solusi. "Saya butuh aplikasi warehouse", padahal setelah ditelusuri lebih dalam sebetulnya *pain point* utama user adalah "Saya seringkali kehabisan stok barang tanpa sadar
+, sehingga ketika pelanggan minta barangnya habis" yang bisa diselesaikan dengan **early warning system** yang lebih sederhana.
+
+## **Start with WHY**
+
+Ini teknik klasik yang disebut 5 Whys. Setiap kali dapet jawaban, tanya lagi "kenapa?"
+
+Masalah: "Pelanggan sering kecewa."
+
+- Kenapa? "Karena barang yang mereka cari nggak ada."
+- Kenapa? "Karena stok habis tanpa aku sadari."
+- Kenapa? "Karena aku nggak punya cara tracking stok yang real-time."
+- Kenapa? "Karena sekarang aku cuma catat manual di buku, dan sering lupa update."
+- Kenapa? "Karena aku sibuk melayani pelanggan, nggak sempat catat setiap transaksi."
+
+Sekarang kita punya gambaran yang jauh lebih jelas. Masalahnya bukan "butuh aplikasi", tapi "proses pencatatan yang terlalu manual dan time-consuming sehingga sering terlewat."
+
+## **Pahami Konteks**
+
+Pahami konteks dan jangan hanya fokus ke masalah teknis.
+
+1. Siapa usernya?
+2. Gimana environtmentnya?
+3. Apa yang sudah dicoba
+
+Konteks ini sangat penting agar solusi kita bisa jalan.
+
+##  **Bedakan Problem vs. Symptom**
+
+Ini penting banget. Yang sering dikeluhkan orang itu biasanya symptom atau gejala yang ada di permukaan saja, bukan root problem.
+
+contoh: 
+- Symptoms:
+    Banyak pekerja tidak menggunakan APD
+- Problem:
+    Tidak ada sistem monitoring real-time + enforcement yang konsisten
+
+## Mendefinisikan Problem Statement
+
+Setelah mengobrol dengan user atau requester, tulis problem statement yang jelas. Format yang bagus:
+
+:::tip
+[Siapa] mengalami [masalah apa] ketika [konteks/situasi], yang menyebabkan [dampak].
+:::
+Contoh: "Pemilik toko kecil kesulitan memantau stok barang secara real-time karena pencatatan manual yang sering terlewat saat sibuk melayani pelanggan, yang menyebabkan kehabisan stok tanpa early warning dan kehilangan pelanggan."
+
+Problem statement yang bagus itu:
+
+- **Spesifik** — bukan "manage inventory" tapi "memantau stok secara real-time"
+- **User-centered** — fokus ke orang yang punya masalah, bukan teknologinya
+- **Measurable** — ada dampak yang bisa diukur (kehilangan pelanggan)
+- **Netral terhadap solusi** — nggak menyebut teknologi atau fitur spesifik

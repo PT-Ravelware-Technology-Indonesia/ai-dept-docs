@@ -1,0 +1,41 @@
+---
+title: "Prototyping"
+---
+Guide ini akan menjelaskan **Proses** pembuatan prototype dari ide hingga menjadi software. Guide ini akan membantu
+untuk membuat prototype yang baik.
+
+1. **Defining The Problem**
+    
+    Semua software ada untuk menyelesaikan masalah, akan tetapi seringkali software atau solusi gagal karena menyelesaikan masalah yang salah.
+    Software dengan code yang rapi, arsitektur yang solid, dan robust menjadi tidak berguna ketika tidak menyelesaikan masalah user.
+    Oleh karena itu, bagian pertama, yaitu perumusan masalah sangat krusial dan memerlukan proses berpikir yang cukup mendalam.
+
+    **The Solutioning Trap**
+
+    Seringkali kita sebagai engineer langsung berpikir mengenai solusi teknis. "Oh, bisa pake OCR aja!" inilah yang dinamakan *solutioning trap*.
+    Kita langsung lompat ke solusi sebelum benar-benar paham masalahnya. Walaupun, seringkali kita langsung menerima inquiries dari `requester`, 
+    apabila kita memahami ini, kita bisa berdiskusi dan men-*challenge* ide atau solusi requester agar dapat menyelesaikan masalah yang sebenarnya.
+
+    Cara untuk menghindari *solutioning trap* ini adalah dengan menjadi kritis dan bertanya lebih dalam:
+    - "Masalah apa yang paling bikin pusing sekarang?"
+    - "Sekarang manage inventory-nya gimana?"
+    - "Apa yang paling sering salah?"
+    - "Kalau masalah ini nggak diselesaikan, dampaknya apa?"
+
+    Cobalah untuk mendengarkan terlebih dahulu sebelum mengajukan solusi. Seringkali, end user sendiri pun gagal mengidentifikasi masalah mereka dan langsung
+    mengajukan solusi. "Saya butuh aplikasi warehouse", padahal setelah ditelusuri lebih dalam sebetulnya *pain point* utama user adalah "Saya seringkali kehabisan stok barang tanpa sadar
+    , sehingga ketika pelanggan minta barangnya habis" yang bisa diselesaikan dengan **early warning system** yang lebih sederhana.
+
+    :::tip
+    Tips 1: Tanya "Kenapa" 5 kali
+    :::
+
+    Ini teknik klasik yang disebut 5 Whys. Setiap kali dapet jawaban, tanya lagi "kenapa?"
+
+    - Masalah: "Pelanggan sering kecewa."
+    - Kenapa? "Karena barang yang mereka cari nggak ada."
+    - Kenapa? "Karena stok habis tanpa aku sadari."
+    - Kenapa? "Karena aku nggak punya cara tracking stok yang real-time."
+    - Kenapa? "Karena sekarang aku cuma catat manual di buku, dan sering lupa update."
+    - Kenapa? "Karena aku sibuk melayani pelanggan, nggak sempat catat setiap transaksi."
+    - Sekarang kamu punya gambaran yang jauh lebih jelas. Masalahnya bukan "butuh aplikasi", tapi "proses pencatatan yang terlalu manual dan time-consuming sehingga sering terlewat."
