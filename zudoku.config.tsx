@@ -6,7 +6,7 @@ const config: ZudokuConfig = {
     },
   site: {
     logo: {
-      src: { light: "/logo-light.svg", dark: "/logo-dark.svg" },
+      src: { light: "/ravelware-light.svg", dark: "/ravelware-dark.svg" },
       alt: "Zudoku",
       width: "130px",
     },
