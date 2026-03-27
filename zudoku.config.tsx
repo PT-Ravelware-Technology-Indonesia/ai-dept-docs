@@ -305,7 +305,7 @@ const config: ZudokuConfig = {
       "/monitoring_iteration",
       {
         "type": "category",
-        "label": "Documentation",
+        "label": "Documentation Guide",
         "collapsible": true,
         "collapsed": true,
         "icon": "book",
