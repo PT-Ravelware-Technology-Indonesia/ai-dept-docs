@@ -131,12 +131,53 @@ const config: ZudokuConfig = {
         "/prototyping",
         {
           "type": "category",
-          "label": "PoC",
+          "label": "Prototyping Guide",
           "collapsible": true,
-          "collapsed": true,
+          "collapsed": false,
           "icon": "blocks",
           "items": [
-
+            {
+              "type": "doc",
+              "file": "prototyping/defining_the_problem",
+              "label": "Defining the Problem",
+              "icon": "file-question-mark"
+            },
+            {
+              "type": "doc",
+              "file": "prototyping/research_and_validation",
+              "label": "Research and Validation",
+              "icon": "microscope"
+            },
+            {
+              "type": "doc",
+              "file": "prototyping/planning_and_scoping",
+              "label": "Planning and Scoping",
+              "icon": "notebook-pen"
+            },
+            {
+              "type": "doc",
+              "file": "prototyping/designing_the_solution",
+              "label": "Designing the Solution",
+              "icon": "brush"
+            },
+            {
+              "type": "doc",
+              "file": "prototyping/building_the_mvp",
+              "label": "Building the MVP",
+              "icon": "drill"
+            },
+            {
+              "type": "doc",
+              "file": "prototyping/testing_and_iterating",
+              "label": "Testing and Iterating",
+              "icon": "iteration-cw"
+            },
+            {
+              "type": "doc",
+              "file": "prototyping/shipping_and_learning",
+              "label": "Shipping and Learning",
+              "icon": "truck"
+            },
           ]
         }
       ],
