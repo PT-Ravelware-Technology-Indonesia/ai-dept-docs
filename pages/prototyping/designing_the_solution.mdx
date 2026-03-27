@@ -1,0 +1,83 @@
+---
+title: "Designing the Solution"
+---
+
+import { Mermaid } from "zudoku/mermaid";
+
+Tahap ini mencakup banyak hal: bagaimana user berinteraksi dengan software, bagaimana kita integrasi dengan teknologi lain,
+bagaimana data mengalir, bagaimana komponen-komponen saling terhubung, dan apa teknologi yang dipakai.
+
+---
+
+<Stepper>
+1. **User Flow**
+    
+    Mulai dari user flow sebelum API dan integrasi. Best practicenya adalah berpikir dari user flow.
+    **Bagaimana user akan pakai software ini?**
+
+    <Mermaid
+    chart={
+    `flowchart TD;
+    A[User buka dashboard] --> B[Klik tombol tambah kamera]
+    B --> C[Isi data kamera]
+    C --> D[Simpan]
+    D --> E{Berhasil?}
+    
+    E -- Ya --> F[Kamera muncul di dashboard]
+    E -- Tidak --> G[Tampilkan error]
+    G --> C`
+    }
+    />
+
+    :::tip
+    User flow dibuat sederhana karena MVP nggak butuh flow yang complicated. Yang penting user bisa melakukan core tasks tanpa bingung.
+    :::
+
+    **Tips membuat user flow:**
+
+    - Gunakan sudut pandang user, bukan developer. Bukan "POST /api/products", tapi "catat barang masuk"
+    - Pikirkan happy path dulu, baru edge cases
+    - Setiap step harus jelas apa yang user lakukan dan apa yang terjadi
+    - Kalau flow-nya panjang dan rumit, kemungkinan fitur-nya perlu dipecah
+    
+2. **Data Flow**
+
+    Setelah user flow jelas, saatnya memikirkan data flow. Bagaimana data mengalir? data apa yang perlu disimpan.
+    tahap ini lebih menitik beratkan pada **entitas** dan **relasi**
+
+    - **Apa entitas utamanya?** User, Product, Transaction
+    - **Apa relasinya?** User membuat Transaction, Transaction melibatkan Product
+    - **Data apa yang harus ada di setiap entitas?** Minimum fields yang dibutuhkan
+    - **Apa yang bisa dihitung?** current_stock bisa dihitung dari total Transaction, atau disimpan langsung? (trade-off: performance vs. accuracy)
+    
+    :::warning
+    Jangan over-design data model. Untuk MVP, simpan data yang benar-benar dibutuhkan. Kita bisa menambahkan fields dan tabel nanti.
+    :::
+
+3. **Arsitektur Sederhana**
+
+    Untuk MVP, arsitektur nggak perlu rumit dan scalable dulu. Bahkan, arsitektur yang terlalu rumit di tahap awal itu anti-pattern.
+    Prinsipnya: **start with the simplest architecture that works**. Kita bisa evolve nanti kalau kebutuhan berkembang.
+
+    **Tech Stack**
+    Pada prinsipnya, kita pakai tech stack **sesuai kebutuhan**. bahkan di beberapa kasus kita bisa gunakan <Link to="https://streamlit.io/">Streamlit</Link> saja untuk MVP.
+    Database juga kita bisa gunakan `SQlite`.
+
+4. **Error Handling**
+
+    Pikirkan error handling sejak dini. Untuk setiap user flow, tanya: "Apa yang bisa salah di step ini?".
+    Nggak perlu handle semua edge case di MVP. Tapi minimal:
+
+    - **Error message yang jelas dan actionable** ("Koneksi gagal, coba lagi" bukan "Error 500")
+    - **Retry mechanism**
+    - **Validasi input yang basic**
+</Stepper>
+
+---
+
+## Output
+
+1. **User flow** — Step-by-step perjalanan user untuk setiap core feature
+2. **Data model** — Entitas, relasi, dan fields kunci
+3. **Arsitektur** — Komponen dan bagaimana mereka terhubung
+4. **Tech stack** — Teknologi yang dipilih dengan alasan yang jelas

@@ -1,0 +1,98 @@
+---
+title: "Planning and Scoping"
+---
+
+Bagian Planning and Scoping penting untuk menjaga kita membuat aplikasi yang tetap relevan dengan problem yang kita tentukan di awal.
+
+Pada tahap ini kita harus bisa menentukan **prioritas** fitur yang akan kita deliver untuk prototype atau MVP kita.
+
+---
+## Cara Menentukan Scope MVP
+
+<Stepper>
+1. **List Fitur**
+
+    Tahap awal, list saja semua fitur yang terbayang oleh kita.
+
+2. **Eliminasi**
+
+    Untuk setiap fitur, tanya:
+    - "Apakah user benar benar butuh fitur ini?"
+    - "Jika tidak ada fitur ini, pakah user tetap mendapatkan value dari solusi kita?"
+
+    dari sini kita bisa eliminasi atau postpone fiturnya untuk nanti.
+
+3. **User Stories**
+
+    Untuk lebih memudahkan dan memberikan konteks, buat fitur fitur tadi menjadi *user stories*
+
+    <Callout type="note" icon={false}>
+    Sebagai user, saya ingin mencatat barang yang masuk, supaya stok tercatat otomatis.
+    </Callout>
+    <Callout type="note" icon={false}>
+    Sebagai user, saya ingin dapet alert kalau stok menipis, supaya bisa restock sebelum habis.
+    </Callout>
+
+4. **Estimasi Waktu**
+
+    Setelah scope jelas, saatnya estimasi waktu, estimasi waktu bisa dimulai dengan mem-*breakdown* milestone. 
+
+    :::tip
+    Kalikan estimasi awal 2 - 3x
+    :::
+
+    Lebih baik *under-promise* dan *over-deliver* daripada sebaliknya. Alasannya
+
+    - Bug yang nggak terduga
+    - Edge cases yang baru ketahuan pas implementasi
+    - Setup infrastructure yang lebih lama dari perkiraan
+    - Perubahan requirement pas ngobrol lagi sama user
+    - Force majeure (sakit, urusan lain, burnout)
+</Stepper>
+---
+## Scope Creep
+Scope creep itu fenomena di mana scope project membesar perlahan tanpa kita sadari. Biasanya dimulai dari hal kecil:
+
+"Oh, sekalian aja tambahin fitur kategori. Nggak lama kok."
+
+Satu fitur kecil itu ternyata butuh:
+
+- UI untuk manage kategori
+- Database table baru
+- Validasi
+- Testing
+- Dokumentasi
+
+Yang tadinya "nggak lama" jadi 2-3 hari tambahan. Dan ini terjadi berulang kali.
+
+Cara melawan scope creep:
+
+Tulis scope MVP di dokumen. Kalau ada yang minta fitur baru, tunjukkan dokumen: "Ini bukan bagian dari MVP. Kita catat untuk versi selanjutnya."
+
+"Not now" list. Bikin list fitur yang sengaja di-exclude dari MVP. Ini bukan "nggak penting", tapi "belum waktunya."
+
+Tanya: apakah ini blocking? Kalau fitur baru itu nggak blocking user dari mendapatkan value inti, maka itu bukan MVP.
+
+Set deadline yang firm. "MVP harus release tanggal X." Deadline yang jelas memaksa kita untuk fokus ke yang penting.
+
+---
+## Dokumentasikan keputusan
+
+Satu hal yang sering dilupakan: **dokumentasikan kenapa kita membuat keputusan tertentu**.
+
+Bukan dokumentasi teknis yang berat. Cukup catatan sederhana:
+
+- "MVP hanya support 1 toko karena target user awal adalah toko individual"
+- "Nggak pakai barcode scanner karena user pakai HP basic yang nggak semua punya camera bagus"
+- "Alert via in-app notification dulu, bukan WhatsApp, karena WhatsApp API butuh business account"
+
+Dokumentasi ini berguna banget 3 bulan kemudian pas kita lupa kenapa fitur X nggak ada, atau pas ada orang baru yang join project dan tanya "kenapa nggak pakai approach Y?"
+
+
+## Output
+
+1. **MVP scope yang jelas** — List fitur yang masuk dan yang sengaja di-exclude
+2. **User stories** — Deskripsi singkat apa yang user bisa lakukan
+3. **Timeline yang realistis** — Dengan milestones yang bisa di-track
+4. **"Not now" list** — Fitur yang sengaja ditunda dengan alasan yang jelas
+5. **Decision log** — Catatan kenapa keputusan-keputusan tertentu dibuat

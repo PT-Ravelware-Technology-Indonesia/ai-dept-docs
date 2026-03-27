@@ -1,0 +1,64 @@
+---
+title: "Building the MVP"
+---
+
+Pada tahap ini saatnya membangun MVP. flow pembuatan MVP pada dasarnya sama dengan flow <Link to="../development">development</Link> dengan
+memperhatikan <Link to="../development/project_structure">project structure</Link> dan <Link to="../development/code_quality">code quality</Link> standard yang berlaku.
+
+Pada halaman ini akan dijelaskan mengenai **prinsip** membangun MVP.
+
+---
+
+## Good Enough
+
+MVP **tidak harus sempurna**, ini prinsip yang paling penting. tapi tetap harus **good enough**. Bukan berarti
+kita menulis code yang jelek, tetapi kita fokus ke hal-hal yang penting.
+
+**Good enough:**
+
+- Code yang bersih dan readable
+- Basic error handling
+- Validasi input yang penting
+- Structure yang cukup organized untuk berkembang
+
+**Perfectionist trap**:
+
+- 100% test coverage di hari pertama
+- Abstraksi berlapis-lapis untuk "future-proofing"
+- Optimasi performance padahal user-nya baru 1 orang
+- Dokumentasi API yang lengkap sebelum API-nya jadi
+
+## Vertical Slices, Not Horizontal Layers
+
+Ini konsep penting. Jangan bangun semua database tables dulu, terus semua API endpoints, terus semua UI. 
+**Bangun satu fitur lengkap dari atas ke bawah sebelum pindah ke fitur berikutnya.**
+
+Kenapa vertical slices lebih baik?
+
+- Kita bisa test dan demo lebih awal. Setelah fitur 1 selesai, kita sudah bisa tunjukkan ke user.
+- Kita bisa dapat feedback lebih cepat. Nggak perlu nunggu semua fitur selesai.
+- Deteksi masalah lebih awal. Kalau ada masalah di approach kita, ketahuan di fitur 1, bukan setelah semua fitur setengah jadi.
+
+## Ship Early, Ship Often
+
+Jangan nunggu semuanya sempurna baru deploy. Deploy dari hari pertama kalau bisa.
+
+Ini bukan berarti kasih ke user dari hari pertama. Tapi infrastruktur deployment sudah ready dari awal. 
+Sehingga kapan pun kita mau test di environment yang real, tinggal push.
+
+## Kapan MVP "Selesai"
+
+MVP selesai bukan saat semua fitur yang kita list sudah jadi. MVP selesai saat:
+
+- **User bisa melakukan core task**
+- **Software cukup stable** — Nggak crash setiap 5 menit
+- **Error handling basic ada** — User nggak lihat halaman error yang cryptic
+- **Bisa diakses oleh user** — Sudah di-deploy dan bisa dibuka
+
+Penting: nggak ada "semua edge case sudah di-handle" atau "UI sudah pixel-perfect" atau "performance sudah optimal." Itu bukan kriteria MVP selesai.
+
+## Output
+Output tahap ini:
+- **Working software** — Aplikasi yang bisa diakses dan dipakai untuk core tasks
+- **Deployed to production** — Bukan cuma jalan di local
+- **Ready for user testing** — Cukup stable untuk dikasih ke real users

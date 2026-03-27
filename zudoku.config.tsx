@@ -165,19 +165,7 @@ const config: ZudokuConfig = {
               "file": "prototyping/building_the_mvp",
               "label": "Building the MVP",
               "icon": "drill"
-            },
-            {
-              "type": "doc",
-              "file": "prototyping/testing_and_iterating",
-              "label": "Testing and Iterating",
-              "icon": "iteration-cw"
-            },
-            {
-              "type": "doc",
-              "file": "prototyping/shipping_and_learning",
-              "label": "Shipping and Learning",
-              "icon": "truck"
-            },
+            }
           ]
         }
       ],
