@@ -11,8 +11,30 @@ Struktur project menyesuaikan kebutuhan, namun berikut adalah beberapa project y
 
 ### Fastapi Service
 Fastapi service merupakan sistem dimana kita menyediakan service endpoint untuk model AI kita dan integrasi dengan software melalui HTTP.
+<Mermaid
+    chart={
+        `flowchart LR
+    ai-service[Fastapi Service]
+    backend-service[Backend/Frontend Service]
+    ai-service <--HTTP--> backend-service`
+    }
+/>
 
+Gunakan template berikut untuk membuat Fastapi service baru <Link to="https://github.com/AryaElRumy/fastapi-edge-template.git">Fastapi Service Template</Link>
 
 ### Gateway Service
 Gateway Service merupakan sistem dimana kita menerima data dari sensor ataupun berkomunikasi dengan microcontroler melalui protokol MQTT.
+<Mermaid
+    chart={
+        `
+        flowchart LR
+    ai-service[AI Service]
+    mqtt-broker[MQTT Broker]
+    sensors[sensors]
+    ai-service<-->mqtt-broker
+    sensors-->mqtt-broker
+        `
+    }
+/>
 
+Gunakan template berikut untuk membuat Fastapi service baru <Link to="https://github.com/AryaElRumy/bridge-gateway-template.git">Gateway Service Template</Link>

@@ -43,4 +43,31 @@ Selain itu, codebase harus terstruktur dengan baik agar mudah dikembangkan dan d
 ---
 
 ## Development Flow
+ Berikut adalah typical development flow secara umum
 
+ <Mermaid
+    chart={
+        `
+        flowchart TD;
+    A[Plan tasks] --> B[Implement features]
+    B --> C[Code review]
+
+    C --> D{Approved?}
+    D -- No --> B
+    D -- Yes --> E[Testing]
+
+    E --> F{Tests pass?}
+    F -- No --> B
+    F -- Yes --> G{Ready for production?}
+
+    G -- No --> B
+    G -- Yes --> H[Deploy to production]
+
+    H --> I[Monitor system]
+    I --> J{Issues found?}
+
+    J -- Yes --> B
+    J -- No --> K[Done / Iterate next feature]
+        `
+    }
+ />
