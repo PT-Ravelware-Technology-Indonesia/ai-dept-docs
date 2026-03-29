@@ -33,10 +33,13 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Copy index.html to 404.html
+        run: cp dist/ai-dept-docs/index.html dist/ai-dept-docs/404.html
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: dist/ai-dept-docs 
 
   deploy:
     needs: build
