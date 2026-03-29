@@ -1,6 +1,7 @@
 import type { ZudokuConfig } from "zudoku";
 
 const config: ZudokuConfig = {
+  basePath: "/ai-dept-docs",
   theme: {
       registryUrl: "https://tweakcn.com/r/themes/cmie97f2b000704l27r9g1p11",
     },
