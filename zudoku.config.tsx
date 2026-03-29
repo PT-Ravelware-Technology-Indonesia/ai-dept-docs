@@ -15,7 +15,7 @@ const config: ZudokuConfig = {
   authentication: {
     type: "clerk",
     clerkPubKey: import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-    jwtTemplateName: "ai-dept-docs",
+    jwtTemplateName: "jwt-ai-docs",
   },
 
   protectedRoutes: ["/*"],
