@@ -1,0 +1,182 @@
+---
+title: Versioning Guide
+---
+
+Semua project mengikuti standar <Link to="https://semver.org">Semantic Versioning (SemVer)</Link> — sistem versioning yang konsisten dan mudah dipahami oleh seluruh tim.
+
+
+## Format Versioning
+
+Format versioning yang digunakan adalah:
+
+<div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+  <span style={{ backgroundColor: '#fc7280', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>MAJOR</span>
+  <span style={{ backgroundColor: '#ebc759', color: 'black', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>MINOR</span>
+  <span style={{ backgroundColor: '#48d569', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>PATCH</span>
+</div>
+
+
+Contoh: `1.4.2`
+
+| Segmen  | Contoh | Kapan dinaikkan? |
+|---------|--------|------------------|
+| `MAJOR` | **1**.4.2 → **2**.0.0 | Ada breaking change — tidak backward compatible |
+| `MINOR` | 1.**4**.2 → 1.**5**.0 | Ada fitur baru yang masih backward compatible |
+| `PATCH` | 1.4.**2** → 1.4.**3** | Bug fix yang masih backward compatible |
+
+---
+
+## Aturan Dasar
+
+### 🔴 MAJOR — Naikkan ketika ada breaking change
+
+Breaking change artinya perubahan yang akan **merusak** kode yang sudah ada jika langsung diupdate tanpa penyesuaian.
+
+```
+1.4.2 → 2.0.0
+```
+
+Contoh situasi:
+- Mengubah atau menghapus endpoint API yang sudah ada
+- Mengubah struktur response API secara signifikan
+- Mengganti nama fungsi/method yang sudah dipublish
+- Menghapus fitur yang sebelumnya tersedia
+
+:::warning
+
+Ketika MAJOR naik, MINOR dan PATCH **direset ke 0**.
+
+:::
+---
+
+### 🟡 MINOR — Naikkan ketika ada fitur baru
+
+Fitur baru yang ditambahkan **tanpa merusak** fungsionalitas yang sudah ada.
+
+```
+1.4.2 → 1.5.0
+```
+
+Contoh situasi:
+- Menambahkan endpoint API baru
+- Menambahkan parameter opsional ke fungsi yang sudah ada
+- Menambahkan komponen atau modul baru
+- Menandai fitur sebagai `deprecated` (belum dihapus)
+
+:::warning
+
+Ketika MINOR naik, PATCH **direset ke 0**. MAJOR tidak berubah.
+
+:::
+---
+
+### 🟢 PATCH — Naikkan ketika ada bug fix
+
+Perbaikan bug yang **tidak mengubah** behavior yang sudah ada dan tidak menambah fitur baru.
+
+```
+1.4.2 → 1.4.3
+```
+
+Contoh situasi:
+- Memperbaiki bug logika atau kalkulasi
+- Memperbaiki typo di output atau pesan error
+- Memperbaiki performa tanpa mengubah API
+- Update dependency minor untuk keamanan
+
+---
+
+## Label Pre-release
+
+Untuk versi yang belum siap production, gunakan label berikut setelah versi:
+
+| Label | Contoh | Artinya |
+|-------|--------|---------|
+| `alpha` | `2.0.0-alpha.1` | Masih dalam development, bisa banyak berubah |
+| `beta` | `2.0.0-beta.1` | Fitur sudah lengkap, masih dalam pengujian |
+| `rc` | `2.0.0-rc.1` | Release Candidate — kandidat final sebelum stable |
+
+```bash
+# Contoh urutan rilis fitur besar
+2.0.0-alpha.1
+2.0.0-alpha.2
+2.0.0-beta.1
+2.0.0-rc.1
+2.0.0          ← stable release
+```
+
+---
+
+## Versi Awal (0.x.x)
+
+Selama versi masih di `0.x.x`, project dianggap masih dalam tahap **initial development**.
+
+- API bisa berubah kapan saja
+- Belum ada jaminan stabilitas
+- Aturan MAJOR/MINOR/PATCH tetap berlaku sebagai panduan, tapi lebih fleksibel
+
+Gunakan `1.0.0` ketika project sudah siap untuk digunakan secara umum (public/production).
+
+---
+
+## Cara Membaca Changelog
+
+Setiap perubahan versi harus didokumentasikan di `CHANGELOG.md` dengan format berikut:
+
+```markdown
+## [1.5.0] - 2025-06-15
+
+### Added
+- Endpoint baru `GET /users/:id/activity` untuk mengambil log aktivitas user
+
+### Fixed
+- Bug kalkulasi total harga saat ada diskon bertumpuk
+
+### Deprecated
+- Field `user.fullName` — gunakan `user.firstName` + `user.lastName`
+
+## [1.4.3] - 2025-06-01
+
+### Fixed
+- Perbaikan crash saat upload file berukuran 0 byte
+```
+
+Gunakan kategori: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
+
+---
+
+## Contoh flow
+<Mermaid
+    config={{look:"handDrawn"}}
+    chart={
+        `
+        gitGraph
+   commit id: "0.1.0 — Project dibuat" tag: "v0.1.0"
+   commit id: "0.2.0 — Fitur login" tag: "v0.2.0"
+   commit id: "0.2.1 — Fix bug form validasi" tag: "v0.2.1"
+   commit id: "1.0.0 — Production ready " tag: "v1.0.0"
+   commit id: "1.1.0 — Fitur notifikasi email" tag: "v1.1.0"
+   commit id: "1.1.1 — Fix typo pesan error" tag: "v1.1.1"
+   branch breaking-change
+   checkout breaking-change
+   commit id: "2.0.0-beta.1 - Redesign autentikasi"
+   commit id: "2.0.0-rc.1 - Testing final"
+   checkout main
+   merge breaking-change id: "2.0.0 - Breaking change merged " tag: "v2.0.0"
+   `
+    }
+/>
+
+
+---
+
+## Quick Reference
+
+```
+Ada breaking change?        → naikkan MAJOR  (x.0.0)
+Ada fitur baru?             → naikkan MINOR  (0.x.0)
+Ada bug fix saja?           → naikkan PATCH  (0.0.x)
+Belum production-ready?     → tambahkan label pre-release
+```
+
+---

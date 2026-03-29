@@ -62,10 +62,22 @@ const config: ZudokuConfig = {
                 },
                 {
                   "type": "doc",
+                  "file": "home/tools/nssm",
+                  "label": "NSSM",
+                  "icon": "bolt"
+                },
+                {
+                  "type": "doc",
+                  "file": "home/tools/docker",
+                  "label": "Docker",
+                  "icon": "bolt"
+                },
+                                {
+                  "type": "doc",
                   "file": "home/tools/roo_code",
                   "label": "Roo Code",
                   "icon": "bolt"
-                }
+                },
               ]
             },
           ],
@@ -277,25 +289,23 @@ const config: ZudokuConfig = {
       items: [
         "/deployment",
         {
-          "type": "category",
+          "type": "doc",
+          "file": "deployment/edge_deployment",
           "label": "Edge Deployment",
-          "collapsible": true,
-          "collapsed": true,
           "icon": "cpu",
-          "items": [
-
-          ]
         },
         {
-          "type": "category",
+          "type": "doc",
+          "file": "deployment/cloud_deployment",
           "label": "Cloud Deployment",
-          "collapsible": true,
-          "collapsed": true,
           "icon": "cloud",
-          "items": [
-
-          ]
         },
+        {
+          "type": "doc",
+          "file": "deployment/versioning_guide",
+          "label": "Versioning Guide",
+          "icon": "file-stack",
+        }
       ],
     },
     {

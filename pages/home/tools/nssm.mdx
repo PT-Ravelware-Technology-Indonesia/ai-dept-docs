@@ -1,0 +1,81 @@
+---
+title: NSSM
+---
+
+---
+NSSM adalah tool sederhana untuk menjalankan aplikasi biasa (exe, script, dll) sebagai Windows Service.
+
+---
+
+## 1. Install NSSM
+
+<Stepper>
+1. Download NSSM
+   link: https://nssm.cc/download
+
+2. Extract file `.zip`
+
+3. Pilih folder sesuai arsitektur:
+   - `win64` → untuk Windows 64-bit (umumnya)
+   - `win32` → untuk Windows 32-bit
+
+</Stepper>
+---
+
+## 2. (Optional) Tambahkan NSSM ke PATH
+
+Agar bisa menjalankan `nssm` dari terminal mana saja:
+
+<Stepper>
+
+1. Copy path folder `nssm.exe`, contoh: `C:\tools\nssm\win64`
+
+2. Buka:
+    - Start Menu → cari **Environment Variables**
+    - Pilih: *Edit the system environment variables*
+
+3. Klik **Environment Variables**
+
+4. Pada bagian **System Variables**, pilih `Path` → klik **Edit**
+
+5. Klik **New**, lalu paste path:`C:\tools\nssm\win64`
+
+6. Klik **OK** sampai semua window tertutup
+
+7. Restart terminal, lalu test:
+    ```bash
+    nssm
+    ```
+</Stepper>
+
+---
+
+## 3. Menjadikan Program sebagai Service
+
+<Stepper>
+1. Jalankan:
+    ```bash
+    nssm install
+    ```
+
+2. Akan muncul GUI, lalu isi:
+
+    - **Path** → path ke executable  
+    Contoh:`C:\myapp\app.exe
+    - **Startup directory** → folder aplikasi  
+    - **Arguments** → (optional) jika ada parameter
+
+3. Service name
+    
+    Isi service name dengan ketentuan sebagai berikut
+    `Ravelware{app_name}{version}` dalam `CamelCase`, contoh -> `RavelwareGatewayService1.0.0` versinoing dapat dilihat di <Link to="../deployment/versioning_guide">versioning guide</Link>
+
+3. Klik **Install service**
+
+</Stepper>
+
+## 3. Menghentikan Program sebagai Service
+
+```bash
+nssm remove MyService confirm
+```

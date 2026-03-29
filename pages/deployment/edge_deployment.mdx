@@ -1,0 +1,58 @@
+---
+title: Edge Deployment
+---
+
+Edge deployment mengacu pada proses deploy model AI ataupun aplikasi di perangkat seperti Mini PC, laptop, atau bahkan perangkat IoT yang berada di "edge" jaringan, bukan di cloud. 
+Proses ini memanfaatkan kemampuan komputasi lokal untuk menjalankan model AI secara langsung di perangkat pengguna sehingga mengurangi latensi dan menjaga privasi data.
+
+Secara umum, biasanya proses Edge Deployment dilakukan seperti berikut
+
+<Stepper>
+1. **App Bundling**
+
+    Sebelum dijalankan di Edge Device, aplikasi python dengan seluruh *dependencies*-nya perlu kita *bundle* menjadi satu *package*.
+    Tool standar yang kita gunakan untuk melakukan itu adalan <Link to="https://pyinstaller.org/en/stable/">Pyinstaller</Link>.
+    Pyinstaller dapat diinstall menggunakan `uv`.
+
+    :::note
+    Package yang dihasilkan Pyinstaller bersifat platform-specific, sehingga untuk menghasilkan package yang dapat dijalankan di Windows, kita perlu menjalankan Pyinstaller di Windows. 
+    Begitu juga untuk Linux dan MacOS.
+    :::
+
+    :::note
+    Penting untuk memastikan bahwa aplikasi yang sudah dibundle berperilaku sama dengan aplikasi yang dijalankan di lingkungan development. 
+    Oleh karena itu, disarankan untuk melakukan testing secara menyeluruh pada aplikasi yang sudah dibundle sebelum melakukan deployment ke Edge Device.
+    :::
+
+    :::tip
+    Salah satu masalah yang sering muncul adalah perbedaan path sebelum dan sesudah aplikasi dibundle.
+    Oleh karena itu, selalu gunakan path relatif dan tulis logic sederhana untuk mengecek apakah aplikasi sedang dijalankan dalam mode development atau sudah dibundle, 
+    sehingga kita bisa menyesuaikan path yang digunakan.
+    :::
+
+    ```python title=check_bundle.py
+    import sys
+    import os
+
+    if getattr(sys, "frozen", False):
+        #Running as .exe
+        public_path = os.path.join(sys._MEIPASS, settings.app_settings.PUBLIC_DIR) #public dir relatif terhadap .exe file
+    else:
+        public_path = settings.app_settings.PUBLIC_DIR
+    ```
+
+2. **Assign as a Service**
+
+    Setelah aplikasi berhasil dibundle dan selesai ditest secara keseluruhan, langkah selanjutnya adalah menjalankan aplikasi tersebut sebagai service di Edge Device.
+    Hal ini penting agar aplikasi dapat berjalan secara otomatis saat Edge Device dinyalakan, dan juga untuk memastikan aplikasi tetap berjalan meskipun terjadi error atau crash.
+    Untuk menjalankan aplikasi sebagai service, kita bisa menggunakan <Link to="https://nssm.cc/download">nssm</Link>.
+
+    Petunjuk untuk menginstall nssm dapat dilihat di <Link to="../home/tools/nssm">sini</Link> dan petunjuk penamaan service serta versioning dapat dilihat di <Link to="../deployment/versioning_guide">versioning guide</Link>.
+
+3. **Inno setup (Optional)**
+
+    <Link to="https://jrsoftware.org/isinfo.php">Inno Setup</Link> adalah tool yang dapat digunakan untuk membuat installer untuk aplikasi Windows.
+    Dengan menggunakan Inno Setup, kita dapat membuat installer yang mudah digunakan untuk menginstall aplikasi kita di Edge Device.
+    Hal ini sangat berguna untuk memudahkan proses deployment, terutama jika aplikasi kita memiliki banyak dependencies atau konfigurasi yang perlu dilakukan saat instalasi.
+
+</Stepper>
