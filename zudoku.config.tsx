@@ -12,6 +12,13 @@ const config: ZudokuConfig = {
       width: "130px",
     },
     },
+  authentication: {
+    type: "clerk",
+    clerkPubKey: import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+    jwtTemplateName: "jwt-ai-docs",
+  },
+
+  protectedRoutes: ["/*"],
   navigation: [
     {
       type: "category",
