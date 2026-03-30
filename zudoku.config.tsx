@@ -1,24 +1,31 @@
 import type { ZudokuConfig } from "zudoku";
 
+const isProd = typeof import.meta !== "undefined" 
+  ? import.meta.env?.PROD 
+  : process.env.NODE_ENV === "production";
+
 const config: ZudokuConfig = {
-  basePath: "/ai-dept-docs",
+  basePath: isProd ? "/ai-dept-docs" : "",
+
   theme: {
-      registryUrl: "https://tweakcn.com/r/themes/cmie97f2b000704l27r9g1p11",
-    },
+    registryUrl: "https://tweakcn.com/r/themes/cmie97f2b000704l27r9g1p11",
+  },
   site: {
     logo: {
       src: { light: "/ravelware-light.svg", dark: "/ravelware-dark.svg" },
       alt: "Zudoku",
       width: "130px",
     },
-    },
-  authentication: {
-    type: "clerk",
-    clerkPubKey: import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-    jwtTemplateName: "jwt-ai-docs",
   },
 
-  protectedRoutes: ["/*"],
+  ...(isProd && {
+    authentication: {
+      type: "clerk",
+      clerkPubKey: import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+      jwtTemplateName: "jwt-ai-docs",
+    },
+    protectedRoutes: ["/*"],
+  }),
   navigation: [
     {
       type: "category",
@@ -349,14 +356,10 @@ const config: ZudokuConfig = {
     items: [
       "/project_documentation",
       {
-        "type": "category",
-        "label": "Project 1",
-        "collapsible": true,
-        "collapsed": true,
-        "icon": "book",
-        "items": [
-
-        ]
+        "type": "doc",
+        "file": "project_documentation/dws",
+        "label": "DWS",
+        "icon": "scale"
       },
       {
         "type": "category",
