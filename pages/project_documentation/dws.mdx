@@ -2,6 +2,268 @@
 title: DWS
 ---
 
-DWS Documentation
+## Project Overview
+Sistem edge computing yang berjalan on premises untuk di gunakan di sorting Si-Cepat. Tugasnya adalah mengukur dimensi dan berat secara otomatis, lalu mengirimkan hasilnya ke backend melalui RestAPI (FastAPI) dan MQTT.
 
-Test MD
+## Konteks Penggunaan
+Sistem dipasang conveyor belt. dengan alur scan barcode → Timbang Berat → Hitung Dimensi → Kirim hasilnya melalui MQTT
+
+## Gambaran Arsitektur
+![](https://t90182395994.p.clickup-attachments.com/t90182395994/4e27f654-d7c3-4e13-af16-a3484f74e05f/image.png)
+
+## Komponen Utama
+
+---
+
+| Komponen | File | Tanggung Jawab |
+| --- | --- | --- |
+| DWSController | src/dws\_controller.py | Orkestrator utama. Koordinasi semua modul, trigger logic, state transaksi. |
+| CameraDriver | src/service/camera\_services.py | Inisialisasi kamera Orbbec, konfigurasi HW D2C, akuisisi frame. |
+| MeasuringService | src/service/measurements\_services.py | Pemrosesan frame: segmentasi depth, deteksi objek, kalkulasi dimensi. |
+| CalibrationService | src/service/calibration\_service.py | Kalibrasi multi-point untuk scale factor L/W/H. |
+| MQTTClientService | src/service/mqtt\_client\_services.py | Koneksi ke MQTT broker, publish data, LWT, auto-reconnect. |
+| AsyncTCPServer | src/utils/tcp\_server.py | Menerima data barcode dari scanner via TCP. |
+| AsyncBLEReader | src/utils/ble\_listener.py | Membaca data berat dari timbangan via BLE notify. |
+| ConfigStore | src/core/config\_store.py | Single source of truth config runtime. Persist ke config.json. |
+| HTTP Server | src/service/http\_server.py | FastAPI: live stream MJPEG, GET/PUT config, calibration router. |
+| ImageUtils | src/utils/image\_utils.py | Encode frame ke JPG, simpan ke disk, konversi ke base64. |
+
+---
+
+# FITUR
+
+## Pengukuran Dimensi Otomatis
+Kamera depth Orbbec dipasang diatas platform timbangan menghadap kebawah. Setiap frame, sistem melakukan segmentasi depth untuk mendeteksi objek yang ada di bawah kamera. Jika objek menutupi atau bersinggunakn dengan titik tengah frame, sistemn akan mulai mengukur dimensinya dan merata-ratakan hasilnya dari beberapa frame sebelumnya.
+
+- Menggunakan Hardware D2C (Depth to Color Alignment)
+- Nilai Intrinsik kamera dobaca otomatis dari SDK saat Startup
+- Floor depth dikalibrasi otomatis saat startup -- Bisa di konfigurasi menggunakan API /config
+
+## Integrasi Timbangan BLE
+Berat paket dibaca dari timbangan digital yang terhubung via Bluetooth Low Energy. Sistem otomatis mendeteksi UUID characteristic BLE yang, sehingga tidak perlu konfigurasi UUID manual.
+
+- Auto-reconnect jika BLE terputus sebanyak 3 kali percobaan.
+- Deteksi stability flag dari byte terakhir dari notifikasi BLE.
+- Berat di-reset ke 0 otomatis ketika BLE disconnect agar tidak terjadi trigger palsu.
+
+## Integrasi Barcode Scanner via TCP
+Scanner barcode terhubung ke sistem melalui TCP server yang berjalan di port 9004. Scanner mengirim string barcode setiap kali scan berhasil.
+
+- Barcode Debounce: barcode yang sama tidak diproses ulang dalam interval waktu tertentu.
+- Barcode Expired: Barcode yang tidak diikuti berat stabil dalam batas waktu tertentu (dapat di konfigurasi) akan dianggap expired dan direset.
+
+## Trigger Logic
+Transaksi pengukuran hanya dieksekusi ketika tiga kondisi terpenuhi dan bertahan selama `stability_delay` detik:
+
+:::info{title="Kondisi Trigger"}
+
+- Barcode sudah di-scan.
+- Berat stabil > 0.02 kg.
+- Barang terdeteksi dan bisa diukur (ada di area titik tengah frame).
+
+:::
+
+Ini mencegah pengiriman data saat masih bergerak atau belum ada barcode yang di scan.
+
+## Kalibrasi Dimensi
+Sistem menyediakan endpoint kalibrasi multi-point untuk mengoreksi error sistematis pada pengukuran. Operator mengukur beberapa objek referensi yang sudah diketahui ukurannya, sistem menghitung scale factor optimal menggunakan weighted average berdasarkan volume objek.
+
+:::tip
+
+Gunakan minimal 2 objek referensi untuk hasil kalibrasi terbaik: satu ukuran kecil (~15cm) dan satu ukuran besar (~50cm). Semakin bervariasi ukuran referensi, semakin akurat scale factor yang dihasilkan.
+
+:::
+
+- Minimal 1 objek referensi. Direkomendasikan 2: ukuran kecil (~15cm) dan besar (~50cm).
+- Scale factor diterapkan ke config langsung setelah konfirmasi -- tanpa restart.
+- Riwayat sesi kalibrasi disimpan ke calibration.json.
+
+## Live Stream & Developer Mode
+Frame hasil pemrosesan di-stream via MJPEG HTTP di endpoint /stream. Dashboard dapat menampilkan preview kamera secara realtime.
+
+- Frame di-resize ke 720x540 sebelum stream untuk efisiensi bandwidth.
+- FPS stream di-cap 24fps.
+- Dev Mode: Aktifkan dengan `DEV_MODE=true` di `.env` untuk mode debugging.
+
+:::info{title="Dev Mode"}
+
+Saat `DEV_MODE=true`, stream menampilkan grid 2x2 — **RAW**, **DEPTH**, **MASKING**, dan **RESULT** — sehingga memudahkan debugging pipeline pengukuran secara visual.
+
+:::
+
+## Runtime Config via HTTP API
+Semua parameter tuning dapat diubah saat runtime melalui PUT /config tanpa perlu restart sistem. Perubahan langsung efektif dan disimpan ke config.json untuk persistensi.
+
+:::note
+
+Perubahan config via API bersifat persisten — nilai tersimpan di `config.json` dan tetap berlaku setelah restart.
+
+:::
+
+## Error Reporting via MQTT
+Error fatal dari modul manapun dikirim ke MQTT topic DWS-SICEPAT/STATUS/ERROR sebelum proses exit, sehingga backend dapat mendeteksi dan menampilkan notifikasi ke operator.
+
+# Alur Data
+
+## Alur Normal
+![](https://t90182395994.p.clickup-attachments.com/t90182395994/4b9c8e6f-8b3d-4d66-bb20-a32f2367618c/image.png)
+
+## MQTT Payload
+
+| Topic | Trigger | Isi |
+| --- | --- | --- |
+| DISPLAY/BARCODE | Tiap scan barcode | \{ barcode: str \} |
+| DISPLAY/MEASUREMENT | Tiap frame (~15fps) | \{ weight, length, width, height, volumetric, divisor \} |
+| DATA/RESULT | Saat transaksi selesai | \{ barcode, weight, length, width, height, volumetric, divisor, image\_base64 \} |
+| STATUS | Connect / disconnect | \{ status: "ONLINE" \} atau \{ status: "OFFLINE", reason \} |
+| STATUS/ERROR | Error fatal | \{ status: "ERROR", failed\_module, error\_message \} |
+
+# Setup
+
+## Prerequisites
+- Windows 10/11 64-bit
+- Python 3.11
+- uv (Astral) - package manager (pip install uv)
+- Orbbec SDK DLL tersedia di root project (OrbbecSDK.dll; OrbbecSDKConfig.xml).
+- MQTT broker berjalan di localhost: 1883 (atau ws 9001)
+
+## Instalasi
+
+```bash title="Terminal"
+# 1. Clone atau extract project
+cd dws-sicepat-middleware
+
+# 2. Install dependencies
+uv sync
+
+# 3. Install pyorbbecsdk dari wheel lokal
+uv add pyorbbecsdk-2.0.15-cp311-cp311-win_amd64.whl
+
+# 4. Buat .env dari template (lihat bagian konfigurasi)
+copy .env.example .env
+
+# 5. Jalankan
+uv run -m main
+```
+
+## File .env
+
+```bash title=".env"
+# TCP Config
+TCP_SERVER_HOST=0.0.0.0
+TCP_SERVER_PORT=9004
+
+# BLE Config
+BLE_MAC_ADDRESS=80:00:02:11:11:23
+BLE_UUID_CHARACTERISTICS=0000ffb0-0000-1000-8000-00805f9b34fc
+
+APP_NAME=FastAPI Template
+APP_VERSION=0.1.0
+APP_DESCRIPTION=FastAPI Template API for Edge Deployments
+APP_PORT=8000
+
+PUBLIC_DIR=public
+TOOLS_DIR=tools
+
+# Resolusi Frame
+DEPTH_WIDTH=1600
+DEPTH_HEIGHT=1200
+COLOR_WIDTH=1280
+COLOR_HEIGHT=960
+FPS=15
+
+# Nilai Intrinsik kamera
+FX=1254.023193 
+FY=1253.993041
+CX=961.230163
+CY=537.347717
+
+# Konstanta
+MOUNT_HEIGHT_MM=10.0 # Tinggi kamera
+MIN_OBJECT_HEIGH_MM=50.0 # Minimal tinggi dari objek yang akan dideteksi
+ROI_MARGIN=100 # Berapa banyak setiap sisi akan di crop untuk menghilangkan distorsi
+MIN_CONTOUR_AREA=2000 # Menimal kontur (banyak kesatuan pixel) untuk dideteksi
+EROSION_KERNEL_SIZE=3 # Ukuran kernel erosion untuk filter tepi depth (pixel, harus ganjil)
+EROSION_ITERATIONS=1 # Banyak iterasi kernel
+MEASUREMENT_BUFFER_SIZE=10 # Maksimal data yang ditampung dalam satu waktu
+LOCK_DELAY_SECONDS=2.0 # Berapa lama sistem harus menahan lock untuk trigger (detik)
+MAX_TRACKING_DISTANCE=50.0 # Berapa banyak (pixel) objek bergeser hingga dianggap beda objek
+
+STABILITY_REQUIRED_SAMPLES=15 
+
+VOLUMETRIC_DIVISOR=6000.0
+BARCODE_TIMEOUT=15.0 # Berapa lama barcode akan disimpan
+BARCODE_DEBOUNCE=1.0 # Berapa lama sistem menolak data barcode yang sama
+
+# Kalibrasi
+SCALE_L=1.0
+SCALE_W=1.0
+SCALE_H=1.0
+
+DEV_MODE=False
+```
+
+## File yang Auto-Generated
+
+| File | Dibuat Saat | Isi |
+| --- | --- | --- |
+| config.json | Pertama kali config diubah via API | Override config runtime. Merge dengan .env saat startup. |
+| calibration.json | Sesi kalibrasi pertama dikonfirmasi | Riwayat semua sesi kalibrasi beserta scale factor. |
+| captured\_images/ | Tiap transaksi selesai | Foto paket dalam format JPG dengan timestamp dan barcode sebagai nama file. |
+
+
+## Endpoints Utama
+
+:::note
+
+API berjalan di [http://localhost:8000](http://localhost:8000). Dokumentasi interaktif tersedia di [http://localhost:8000/scalar](http://localhost:8000/scalar).
+
+:::
+
+| Method | Endpoint | Fungsi |
+| --- | --- | --- |
+| GET | /stream | Live stream kamera (MJPEG) |
+| GET | /config | Ambil semua nilai konfigurasi saat ini |
+| PUT | /config | Update satu atau lebih nilai konfigurasi |
+| POST | /calibrate/start | Mulai sesi kalibrasi baru |
+| POST | /calibrate/measure | Ukur objek di frame (blocking ~3 detik) |
+| POST | /calibrate/point | Simpan data point kalibrasi |
+| DELETE | /calibrate/point/\{i\} | Hapus data point berdasarkan index |
+| GET | /calibrate/status | Preview scale dari data point yang terkumpul |
+| POST | /calibrate/confirm | Konfirmasi kalibrasi — apply scale ke config |
+| POST | /calibrate/cancel | Batalkan sesi kalibrasi |
+| GET | /calibrate/history | Riwayat sesi kalibrasi sebelumnya |
+
+## Parameter Konfigurasi
+
+| Parameter | Default | Keterangan |
+| --- | --- | --- |
+| mount\_height\_mm | auto/configurable | Jarak kamera ke lantai (mm). Dikalibrasi otomatis saat startup. |
+| min\_height\_thresh | 50 | Tinggi minimum objek agar terdeteksi (mm). |
+| erosion\_size | 3 | Ukuran kernel erosion untuk filter tepi depth (pixel, harus ganjil). |
+| erosion\_iterations | 1 | Jumlah iterasi erosion. Semakin besar = contour semakin menyusut. |
+| volumetric\_divisor | 6000 | Pembagi volumetric weight. Standar internasional 6000, udara 5000. |
+| stability\_delay | 2.0 | Durasi kondisi harus terpenuhi sebelum trigger (detik). |
+| barcode\_timeout | 15.0 | Barcode dianggap expired setelah N detik tanpa trigger (detik). |
+| barcode\_debounce | 1.0 | Jeda minimum antara dua scan barcode yang sama (detik). |
+| max\_match\_dist | 50.0 | Jarak maksimum centroid antar frame untuk tracking objek (pixel). |
+| scale\_l | 1.0 | Scale factor panjang (L) dari kalibrasi. |
+| scale\_w | 1.0 | Scale factor lebar (W) dari kalibrasi. |
+| scale\_h | 1.0 | Scale factor tinggi (H) dari kalibrasi. |
+
+## Tech Stack
+
+| Kategori | Library / Tool | Versi | Kegunaan |
+| --- | --- | --- | --- |
+| Runtime | Python | 3.11 | Bahasa utama |
+| Package Manager | uv (Astral) | latest | Dependency & env management |
+| HTTP Framework | FastAPI | latest | HTTP API server |
+| HTTP Server | uvicorn | latest | ASGI server untuk FastAPI |
+| Kamera SDK | pyorbbecsdk | 2.0.15 | Orbbec depth camera interface |
+| Computer Vision | OpenCV (cv2) | latest | Pemrosesan frame, segmentasi, anotasi |
+| Numerik | NumPy | latest | Array operations, kalkulasi depth |
+| MQTT | paho-mqtt | latest | MQTT client |
+| BLE | bleak | latest | BLE client untuk timbangan |
+| Config | pydantic-settings | latest | Settings management dari .env |
+| Logging | loguru | latest | Structured logging |
+| API Docs | scalar-fastapi | latest | Interactive API documentation UI |
