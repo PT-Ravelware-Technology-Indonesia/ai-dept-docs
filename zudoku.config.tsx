@@ -123,6 +123,12 @@ const config: ZudokuConfig = {
               "icon": "file-text"
             },
             {
+              "type": "link",
+              "to": "https://drive.google.com/drive/folders/1IO8BVnA2antwvnFPgqWHl4H_v7geFif0?usp=sharing",
+              "label": "Report Drive",
+              "icon": "archive"
+            },
+            {
               "type":"doc",
               "file":"research/report_example",
               "label": "Report Example",
