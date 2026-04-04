@@ -1,0 +1,524 @@
+---
+title: OpenAI SDK
+---
+
+OpenAI SDK merupakan dasar dari *llm-powered application* karena hampir semua LLM provider menyediakan SDK dengan mengacu kepada OpenAI API yang merupakan pioneer LLM.
+
+## Setup
+
+Untuk menginstall OpenAI SDK, gunkan perintah berikut:
+
+```bash
+uv add openai
+```
+
+kita juga harus menyiapkan API key dari <Link to="https://developers.openai.com/">OpenAI API Platform</Link> atau minta kepada lead-developer untuk mendapatkannya.
+
+## OpenAI Client
+Client adalah pintu masuk untuk berinteraksi dengan OpenAI API, client berupa object yang diinstansiasi dengan API key dan digunakan untuk membuat permintaan ke API.
+
+```python
+from openai import OpenAI
+
+client = OpenAI()
+
+response = client.responses.create(
+    model="gpt-5.4",
+    input="Write a short bedtime story about a unicorn."
+)
+
+print(response.output_text)
+```
+
+:::danger
+Pastikan untuk tidak membagikan API key secara publik ataupun di-*hardcode* di project. 
+Simpan API key di environment variables dan pastikan JANGAN di-commit ke repository.
+:::
+
+### Menggunakan .env
+Untuk menyimpan API key dengan aman, kita bisa menggunakan file `.env` yang tidak di-commit ke repository. Berikut adalah contoh isi file `.env`:
+
+```txt
+OPENAI_API_KEY=sk-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+Kemudian, kita bisa menggunakan library seperti `python-dotenv` untuk mengambil variabel dari file `.env`:
+
+```bash
+uv add python-dotenv
+```
+
+```python
+import os
+from dotenv import load_dotenv
+from openai import OpenAI
+
+load_dotenv()  # load variabel dari .env
+api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=api_key)
+response = client.responses.create(
+    model="gpt-5.4",
+    input="Write a short bedtime story about a unicorn."
+)
+print(response.output_text)
+```
+
+### Openrouter
+<Link to="https://openrouter.ai/">Openrouter</Link> menyediakan banyak pilihan LLM dari berbagai provider dalam satu API yang konsisten sehingga lebih fleksibel dan model agnostic.
+Kita bisa menggunakan Openrouter dengan OpenAI SDK dengan mengganti endpoint dan menambahkan API key Openrouter.
+
+```python
+from openai import OpenAI
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1", #tambahkan base url ketika menggunakan llm provider seperti openrouter
+    api_key=os.getenv("LLM_API_KEY")
+)
+
+```
+
+### Retry Mechanism
+OpenAI SDK memiliki mekanisme retry bawaan untuk menangani kegagalan sementara seperti rate limits atau conenction issues. Kita bisa mengkonfigurasi retry mechanism ini dengan parameter `max_retries` saat membuat client:
+
+```python
+client = OpenAI(
+    max_retries=3,  # Retry 3 kali jika gagal
+)
+```
+
+## Chat Completions
+Chat completions adalah fitur dasar dan utama dari OpenAI SDK dan banyak SDK lainnya.
+Fitur ini mengambil input user, lalu akan dijawab oleh LLM.
+
+```python title="basic_chat_completions.py"
+from openai import OpenAI
+
+client = OpenAI()
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[
+        {"role": "user", "content": "Apa Ibukota dari Indonesia?"}
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+
+### Message Roles
+Dalam chat completions, kita menggunakan konsep *message roles* untuk menentukan siapa yang berbicara dalam percakapan. Ada tiga peran utama:
+
+- `user`: Merupakan input dari pengguna.
+- `assistant`: Merupakan respon dari LLM. maintain konteks percakapan.
+- `system`: Merupakan instruksi atau konteks yang diberikan kepada LLM untuk menentukan behaviour dan personality.
+
+```python
+messages = [
+    # SYSTEM - instructions (tidak shown ke user)
+    {"role": "system", "content": "Kamu adalah assistant yang ramah dan helpful."},
+
+    # USER - input dari user
+    {"role": "user", "content": "Bantu aku bikin resume!"},
+
+    # ASSISTANT - response dari AI (untuk conversation history)
+    {"role": "assistant", "content": "Tentu! Aku dengan senang hati akan membantu. Pertama, ceritakan pengalaman kerjamu."}
+]
+```
+
+### Multi-turn Conversations
+Untuk membuat percakapan yang lebih alami, kita bisa menggunakan multi-turn conversations dengan menyimpan history percakapan. Kita bisa menyimpan pesan-pesan sebelumnya dalam list `messages` dan mengirimkannya bersama dengan input baru.
+
+```python title="multi_turn_conversations.py"
+from openai import OpenAI
+
+client = OpenAI()
+
+# Conversation history
+messages = [
+    {"role": "system", "content": "Kamu adalah coding assistant yang helpful."},
+]
+
+while True:
+    user_input = input("You: ")
+    if user_input.lower() in ["quit", "exit"]:
+        break
+
+    # Tambah user message ke history
+    messages.append({"role": "user", "content": user_input})
+
+    # Get response
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages
+    )
+
+    ai_response = response.choices[0].message.content
+    print(f"AI: {ai_response}")
+
+    # Tambah assistant response ke history
+    messages.append({"role": "assistant", "content": ai_response})
+```
+### Temperature dan Creativity
+`Temperature` adalah parameter yang mengontrol tingkat kreativitas dari output yang dihasilkan oleh LLM.
+Semakin besar nilai temperature, semakin kreatif dan bervariasi output yang dihasilkan. Sebaliknya, nilai temperature yang rendah akan menghasilkan output yang lebih deterministik dan konsisten.
+
+```python
+from openai import OpenAI
+
+client = OpenAI()
+
+# Low temperature - deterministic, consistent
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "What is 2+2?"}],
+    temperature=0  # Selalu jawab "4"
+)
+
+# High temperature - creative, varied
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "Write a haiku about coding"}],
+    temperature=0.8  # Lebih kreatif
+)
+```
+
+### Max Tokens
+`Max tokens` adalah parameter yang mengontrol jumlah token maksimum yang dapat dihasilkan dalam satu response yang sebanding dengan panjangnya response yang diberikan LLM.
+```python
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "Explain quantum physics"}],
+    max_tokens=100  # Maksimal 100 tokens
+)
+```
+
+### Structured Output
+Kita bisa memaksa LLM untuk memberikan output dalam format tertentu, terutama JSON. <Link to="../home/tools/pydantic">Pydantic</Link>
+sangat berguna untuk memvalidasi dan mengelola output terstruktur dari LLM.
+
+```python
+from openai import OpenAI
+from pydantic import BaseModel
+
+client = OpenAI()
+
+class CalendarEvent(BaseModel):
+    name: str
+    date: str
+    participants: list[str]
+
+response = client.responses.parse(
+    model="gpt-4o-2024-08-06",
+    input=[
+        {"role": "system", "content": "Extract the event information."},
+        {
+            "role": "user",
+            "content": "Alice and Bob are going to a science fair on Friday.",
+        },
+    ],
+    text_format=CalendarEvent,
+)
+
+event = response.output_parsed
+```
+
+*Structured Output* biasanya digunakan ketika melakukan <Link to="../development/focused_standard/llms/openai_sdk#function-calling">Function Call</Link>.
+
+### Streaming Response
+Streaming response adalah fitur dimana response dari LLM dikirim secara bertahap saat sedang diproses, sehingga kita bisa mulai menerima output sebelum seluruh response selesai dihasilkan agar lebih *user friendly*.
+
+
+```python title="streaming_response.py"
+from openai import OpenAI
+
+client = OpenAI()
+
+stream = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "Ceritakan tentang sejarah Indonesia"}],
+    stream=True
+)
+
+# Print chunks as they arrive
+for chunk in stream:
+    if chunk.choices[0].delta.content is not None:
+        print(chunk.choices[0].delta.content, end="", flush=True)
+print()  # Newline di akhir
+```
+
+### Simple Chatbot
+```python
+from openai import OpenAI
+
+class SimpleChatbot:
+    def __init__(self, system_prompt):
+        self.client = OpenAI()
+        self.messages = [{"role": "system", "content": system_prompt}]
+
+    def chat(self, user_message):
+        self.messages.append({"role": "user", "content": user_message})
+
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=self.messages,
+            temperature=0.7
+        )
+
+        ai_response = response.choices[0].message.content
+        self.messages.append({"role": "assistant", "content": ai_response})
+
+        return ai_response
+
+# Usage
+bot = SimpleChatbot("Kamu adalah travel guide yang helpful.")
+print(bot.chat("Rekomendasi tempat wisata di Bali"))
+print(bot.chat("Berapa budget yang dibutuhkan?"))
+```
+
+## Function Call
+Function Calling memungkinkan AI "memanggil" fungsi eksternal untuk akses data real-time seperti cuaca, database, atau API.
+Function Call ini seperti 'tangan' dari AI atau tools yang bisa digunakan oleh AI untuk melakukan aksi tertentu di luar kemampuannya sendiri.
+
+
+```python title="function_call.py"
+from openai import OpenAI
+
+client = OpenAI()
+
+# Definisikan tools yang tersedia
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get current weather for a city",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {
+                        "type": "string",
+                        "description": "City name"
+                    }
+                },
+                "required": ["city"]
+            }
+        }
+    }
+]
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Cuaca di Jakarta hari ini?"}],
+    tools=tools
+)
+
+# Cek apakah AI ingin memanggil fungsi
+if response.choices[0].message.tool_calls:
+    tool_call = response.choices[0].message.tool_calls[0]
+    function_name = tool_call.function.name
+    arguments = json.loads(tool_call.function.arguments)
+    print(f"AI ingin memanggil: {function_name} dengan args: {arguments}")
+```
+
+### Typical Flow
+Berikut adalah typical flow ketika menggunakan function call:
+
+```python
+from openai import OpenAI
+import json
+
+client = OpenAI()
+
+def get_weather(city):
+    """Simulasi API cuaca"""
+    return {"city": city, "temperature": "32°C", "condition": "Cerah"}
+
+# Step 1: Define tools
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get current weather for a city",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {"type": "string", "description": "City name"}
+                },
+                "required": ["city"]
+            }
+        }
+    }
+]
+
+# Step 2: Initial request
+messages = [{"role": "user", "content": "Cuaca di Jakarta hari ini?"}]
+
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=messages,
+    tools=tools
+)
+
+# Step 3: Handle function call
+if response.choices[0].message.tool_calls:
+    tool_call = response.choices[0].message.tool_calls[0]
+    
+    # Tambah assistant message ke conversation
+    messages.append({
+        "role": "assistant",
+        "content": None,
+        "tool_calls": [tool_call]
+    })
+    
+    # Execute function
+    function_name = tool_call.function.name
+    arguments = json.loads(tool_call.function.arguments)
+    
+    if function_name == "get_weather":
+        result = get_weather(**arguments)
+    
+    # Step 4: Kirim hasil ke AI
+    messages.append({
+        "role": "tool",
+        "tool_call_id": tool_call.id,
+        "content": json.dumps(result)
+    })
+    
+    # Step 5: Get final response
+    final_response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages,
+        tools=tools
+    )
+    
+    print(final_response.choices[0].message.content)
+    # Cuaca di Jakarta hari ini adalah 32°C dengan kondisi cerah.
+```
+
+:::info
+Ada kalanya tools diabaikan oleh LLM, hal ini biasanya ditangani dengan memberikan instruksi di system prompt untuk memastikan LLM menggunakan tools yang ada.
+:::
+
+### Multiple Tools
+Kita bisa menyediakan multiple tools untuk LLM, dan LLM akan memilih tool yang paling sesuai
+
+```python
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get weather for a city",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {"type": "string"}
+                },
+                "required": ["city"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_stock_price",
+            "description": "Get stock price for a symbol",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol": {"type": "string", "description": "Stock symbol like AAPL"}
+                },
+                "required": ["symbol"]
+            }
+        }
+    }
+]
+
+# AI akan pilih fungsi yang sesuai dengan pertanyaan user
+messages = [
+    {"role": "user", "content": "Berapa harga saham Apple hari ini?"}
+]
+
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=messages,
+    tools=tools
+)
+# AI akan memanggil get_stock_price(symbol="AAPL")
+```
+
+### Tool choice
+Kita juga dapat memilih tool secara khusus
+
+```python
+from openai import OpenAI
+
+client = OpenAI()
+
+# Auto (default) - AI decides when to call tools
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=messages,
+    tools=tools,
+    tool_choice="auto"
+)
+
+# Force AI to use a specific tool
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=messages,
+    tools=tools,
+    tool_choice={"type": "function", "function": {"name": "get_weather"}}
+)
+
+# Prevent AI from using tools
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=messages,
+    tools=tools,
+    tool_choice="none"
+)
+```
+### Complex Parameters
+Tool bisa memiliki parameter kompleks
+
+```python
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "create_event",
+            "description": "Create a calendar event",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Event title"
+                    },
+                    "date": {
+                        "type": "string",
+                        "description": "Date in YYYY-MM-DD format"
+                    },
+                    "time": {
+                        "type": "string",
+                        "description": "Time in HH:MM format"
+                    },
+                    "attendees": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of attendee emails"
+                    }
+                },
+                "required": ["title", "date"]
+            }
+        }
+    }
+]
+```
+

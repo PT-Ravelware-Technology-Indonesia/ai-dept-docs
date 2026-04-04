@@ -87,12 +87,18 @@ const config: ZudokuConfig = {
                   "label": "Docker",
                   "icon": "bolt"
                 },
-                                {
+                {
                   "type": "doc",
                   "file": "home/tools/roo_code",
                   "label": "Roo Code",
                   "icon": "bolt"
                 },
+                {
+                  "type": "doc",
+                  "file": "home/tools/pydantic",
+                  "label": "Pydantic",
+                  "icon": "bolt"
+                }
               ]
             },
           ],
@@ -281,7 +287,36 @@ const config: ZudokuConfig = {
           "collapsed": true,
           "icon": "bot",
           "items": [
-
+            {
+              "type": "doc",
+              "file": "development/focused_standard/llms/openai_sdk",
+              "label": "OpenAI SDK",
+              "icon": "bolt"
+            },
+            {
+              "type": "doc",
+              "file": "development/focused_standard/llms/rag",
+              "label": "RAG",
+              "icon": "search"
+            },
+            {
+              "type": "doc",
+              "file": "development/focused_standard/llms/mcp",
+              "label": "MCP",
+              "icon": "bot"
+            },
+            {
+              "type": "doc",
+              "file": "development/focused_standard/llms/llm_observability",
+              "label": "LLM Observability",
+              "icon": "eye"
+            },
+            {
+              "type": "doc",
+              "file": "development/focused_standard/llms/llm_security",
+              "label": "LLM Security",
+              "icon": "shield"
+            }
           ]
         },
         {
