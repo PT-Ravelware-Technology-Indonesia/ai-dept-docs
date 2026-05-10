@@ -273,6 +273,12 @@ const config: ZudokuConfig = {
           "collapsed": true,
           "icon": "eye",
           "items": [
+            {
+              "type": "doc",
+              "file": "development/focused_standard/computer_vision/model_development",
+              "label": "Model Development",
+              "icon": "brain"
+            }
 
           ]
         },
