@@ -89,12 +89,6 @@ const config: ZudokuConfig = {
                 },
                 {
                   "type": "doc",
-                  "file": "home/tools/roo_code",
-                  "label": "Roo Code",
-                  "icon": "bolt"
-                },
-                {
-                  "type": "doc",
                   "file": "home/tools/pydantic",
                   "label": "Pydantic",
                   "icon": "bolt"

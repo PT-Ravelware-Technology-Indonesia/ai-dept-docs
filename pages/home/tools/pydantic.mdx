@@ -1,3 +1,126 @@
 ---
 title: Pydantic
 ---
+
+**Pydantic** adalah library Python buat data validation dan settings management. Kita pake Pydantic di semua project AI — dari define schema output LLM, validasi config, sampe model data.
+
+## Basic Usage
+
+```python
+from pydantic import BaseModel
+
+
+class User(BaseModel):
+    id: int
+    name: str
+    email: str
+    age: int | None = None
+
+
+user = User(id=1, name="John", email="john@example.com")
+print(user.model_dump())
+# -> {"id": 1, "name": "John", "email": "john@example.com"}
+```
+
+## Validation
+
+Pydantic otomatis validasi tipe data pas inisialisasi:
+
+```python
+from pydantic import BaseModel, EmailStr
+
+
+class User(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
+    age: int | None = None
+
+
+# Valid — string "21" otomatis di-convert ke int
+user = User(id=1, name="John", email="john@example.com", age="21")
+
+# Error — email nggak valid
+user = User(id=1, name="John", email="bukan-email")  # ValidationError
+```
+
+## Nested Model
+
+```python
+from pydantic import BaseModel
+from datetime import datetime
+
+
+class Address(BaseModel):
+    street: str
+    city: str
+    country: str
+
+
+class Order(BaseModel):
+    id: str
+    items: list[str]
+    total: float
+    address: Address
+    created_at: datetime = datetime.now()
+
+
+order = Order(
+    id="ORD-001",
+    items=["item-a", "item-b"],
+    total=150000,
+    address=Address(street="Jl. Sudirman", city="Jakarta", country="ID"),
+)
+```
+
+## Pake buat LLM Structured Output
+
+Ini yang paling sering kita pake — define output schema LLM pake Pydantic:
+
+```python
+from pydantic import BaseModel
+from openai import OpenAI
+
+
+class Decision(BaseModel):
+    action: str
+    tool: str | None = None
+    args: dict | None = None
+    response: str | None = None
+
+
+client = OpenAI()
+response = client.beta.chat.completions.parse(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Cari data user terbaru"}],
+    response_format=Decision,
+)
+
+decision = response.choices[0].message.parsed
+print(decision.action)  # -> "search"
+```
+
+## Settings Management
+
+```python
+from pydantic_settings import BaseSettings
+
+
+class AppSettings(BaseSettings):
+    app_name: str = "AI App"
+    debug: bool = False
+    database_url: str
+
+    model_config = {"env_file": ".env"}
+
+
+settings = AppSettings()
+print(settings.database_url)
+```
+
+## Tips
+
+- Pake `| None` buat optional field — jangan pake `Optional[]` dari typing
+- Pake `Field()` buat tambah constraint (min, max, pattern, dll)
+- Pake `model_dump()` instead of `.dict()` (Pydantic v2)
+- Pake `model_validate()` instead of `.parse_obj()` (Pydantic v2)

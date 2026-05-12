@@ -1,0 +1,119 @@
+---
+title: Docker
+---
+
+**Docker** adalah platform containerization yang kita pake buat nge-package aplikasi dan dependencies-nya jadi satu unit yang konsisten di environment mana pun.
+
+## Install Docker
+
+Ikutin panduan resmi sesuai OS:
+
+- <Link to="https://docs.docker.com/desktop/setup/install/windows-install/">Windows</Link>
+- <Link to="https://docs.docker.com/desktop/setup/install/linux/">Linux</Link>
+- <Link to="https://docs.docker.com/desktop/setup/install/mac-install/">macOS</Link>
+
+Cek hasil install:
+
+```bash
+docker --version
+docker compose version
+```
+
+## Basic Commands
+
+```bash
+# List running containers
+docker ps
+
+# List all containers (including stopped)
+docker ps -a
+
+# List images
+docker images
+
+# Pull image dari registry
+docker pull nginx
+
+# Run container
+docker run -d -p 8080:80 --name web nginx
+
+# Stop container
+docker stop web
+
+# Remove container
+docker rm web
+
+# See logs
+docker logs -f web
+
+# Masuk ke container
+docker exec -it web bash
+```
+
+## Docker Compose
+
+Kita pake Docker Compose buat define service yang butuh multiple container (kayak app + database + Qdrant).
+
+```yaml title="compose.yaml"
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - qdrant
+
+  qdrant:
+    image: qdrant/qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+volumes:
+  qdrant_data:
+```
+
+Jalanin:
+
+```bash
+docker compose up -d
+docker compose down
+docker compose logs -f
+```
+
+## Volume & Data Persistence
+
+Volume dipake biar data container nggak ilang pas container di-restart:
+
+```bash
+# Named volume (recommended)
+docker volume create my_data
+docker run -v my_data:/app/data myapp
+
+# Bind mount (untuk development)
+docker run -v $(pwd):/app myapp
+```
+
+## Best Practices
+
+1. **Minimal image size** — pake `python:3.12-slim` daripada `python:3.12` buat ngurangin ukuran image
+2. **Multi-stage build** — pisahin build environment dari production
+3. **`.dockerignore`** — jangan include `node_modules`, `.venv`, `__pycache__` ke image
+4. **Jangan pake `latest` tag di production** — specify version exact
+5. **Health check** — define `HEALTHCHECK` biar Docker tau kapan container beneran siap
+
+```dockerfile title="Dockerfile (example)"
+FROM python:3.12-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
