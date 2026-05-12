@@ -98,6 +98,12 @@ const config: ZudokuConfig = {
                   "file": "home/tools/pydantic",
                   "label": "Pydantic",
                   "icon": "bolt"
+                },
+                {
+                  "type": "doc",
+                  "file": "home/tools/langfuse",
+                  "label": "Langfuse",
+                  "icon": "bolt"
                 }
               ]
             },
