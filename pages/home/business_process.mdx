@@ -5,7 +5,40 @@ title: AI Departmen Business Process
 Halaman ini menjelaskan alur kerja utama di AI Department, mulai dari permintaan bisnis hingga deployment dan monitoring model.
 
 ## Overview
-<iframe width="768" height="432" src="https://miro.com/app/live-embed/uXjVGvEYA4A=/?embedMode=view_only_without_ui&moveToViewport=-180,-119,1697,820&embedId=480988165148" frameborder="0" scrolling="no" allow="fullscreen; clipboard-read; clipboard-write" allowfullscreen></iframe>
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `flowchart LR
+    A[Request] --> B(Research)
+    C[Prototyping/PoC]
+    D[Project]
+    A --> C
+    A --> D
+
+    E[Research Report]
+    B --> E
+
+    F{effort > 2 weeks?}
+    C --> F
+
+    F --> |yes| D
+
+    G(prototype)
+    F --> |no| G
+
+    H(development)
+    I(deployment)
+
+    D --> H
+    H --> I
+
+    J{update/revisi?}
+
+    I --> J
+    J --> A`
+    }
+/>
 
 Secara umum, proses kerja di AI Department terdiri dari:
 
