@@ -257,12 +257,6 @@ const config: ZudokuConfig = {
               "label": "Integration",
               "icon": "unplug",
             },
-            {
-              "type": "doc",
-              "file": "development/data_management",
-              "label": "Data Management",
-              "icon": "database"
-            },
           ]
         },
         {
