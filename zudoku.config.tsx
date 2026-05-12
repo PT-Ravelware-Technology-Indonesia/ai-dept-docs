@@ -313,12 +313,6 @@ const config: ZudokuConfig = {
             },
             {
               "type": "doc",
-              "file": "development/focused_standard/llms/rag",
-              "label": "RAG",
-              "icon": "search"
-            },
-            {
-              "type": "doc",
               "file": "development/focused_standard/llms/mcp",
               "label": "MCP",
               "icon": "bot"
@@ -328,12 +322,6 @@ const config: ZudokuConfig = {
               "file": "development/focused_standard/llms/llm_observability",
               "label": "LLM Observability",
               "icon": "eye"
-            },
-            {
-              "type": "doc",
-              "file": "development/focused_standard/llms/llm_security",
-              "label": "LLM Security",
-              "icon": "shield"
             }
           ]
         },
