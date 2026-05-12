@@ -1,3 +1,208 @@
 ---
-title: Model Training
+title: Model Development
 ---
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `flowchart TD
+    subgraph Training
+        A[Data Annotation<br/>Roboflow] --> B[Dataset Versioning]
+        B --> C[Train YOLO<br/>70/20/10 split]
+        C --> D[Evaluate<br/>Fail fast?]
+        D -->|No| A
+    end
+
+    subgraph Deployment
+        D -->|Yes| E[Export Model<br/>OpenVINO / ONNX / dll]
+        E --> F[Scenario Test Suite]
+        F -->|Pass| G[Deploy]
+        F -->|Fail| C
+    end
+
+    subgraph Post Deployment
+        G --> H[Monitor Performance<br/>& Data Anomalies]
+        H --> I{Detected<br/>Degradation?}
+        I -->|No| H
+    end
+
+    subgraph Continuous Improvement
+        I -->|Yes| J[Selective Training Pipeline]
+        J --> K[Filter High-Value Data]
+        K --> L[Auto-flag for<br/>Annotation]
+        L --> A
+    end`
+    }
+/>
+
+## 1. Model Training
+
+**Tech stack:**
+
+| Kebutuhan              | Tools                                                                 |
+|------------------------|-----------------------------------------------------------------------|
+| Model architecture     | **Ultralytics YOLO** — object detection, segmentation, classification |
+| Data annotation        | **Roboflow** — annotate, versioning dataset, export format            |
+| Training platform      | Bebas — **local**, Kaggle, Ultralytics HUB, atau Roboflow Train       |
+| Experiment tracking    | Dokumentasi tiap experiment, upload ke Research Report Drive          |
+
+### Dataset Split
+
+Pake **golden rule 70/20/10**:
+
+- **70% Training** — data utama buat belajar
+- **20% Validation** — dicek tiap epoch buat tuning
+- **10% Test** — disentuh paling akhir, cuma buat final evaluation
+
+Jangan pernah pake test set buat validation atau tuning — nanti overfit ke test set dan hasilnya nggak valid.
+
+### Training Strategy
+
+**Mulai dari small epochs dulu.** Tujuan: **fail fast**.
+
+Training model itu mahal. Daragi langsung full training trus ternyata approach-nya salah, mending:
+
+1. Train **50-100 epochs** pake subset data
+2. Lihat loss curves, validation metrics, dan sample predictions
+3. Kalo keliatan bagus → lanjut full training
+4. Kalo nggak → analisis, **buat strategy & hypothesis**, ulang dari step 1
+
+Setelah fail fast, jangan asal ganti parameter. Luangkan waktu buat analisis dan jawab pertanyaan-pertanyaan ini:
+
+| Pertanyaan                                      | Yang Dicek                                                                 |
+|-------------------------------------------------|----------------------------------------------------------------------------|
+| **"Apakah kita butuh tambah dataset?"**         | Cek overfitting (train loss ≪ val loss) → butuh lebih banyak data / augmentasi |
+| **"Apakah kita ganti augmentasi?"**             | Cek underfitting (train/val loss masih tinggi) → model butuh variasi data lebih |
+| **"Apakah kita tambah epoch?"**                 | Cek val loss masih turun di akhir training → model belum converged         |
+| **"Apakah kita ganti arsitektur model?"**       | Cek complexity mismatch — model terlalu kecil/besar buat task-nya          |
+| **"Apakah kita tuning hyperparameter?"**        | Cek learning rate, batch size, optimizer — kadang masalahnya di sini       |
+
+Bikin **hypothesis** sebelum setiap experiment. Contoh:
+
+- *"Kalo kita tambah 500 gambar kondisi malam, val loss di scenario malam turun 10%"*
+- *"Kalo kita pake mosaic augmentation, model lebih robust ke small objects"*
+- *"Kalo kita train 2× lebih lama, val mAP naik 5%"*
+
+Dengan hypothesis, tiap experiment jadi **terukur** — bukan coba-coba doang. Hasilnya (berhasil atau gagal) tetep jadi knowledge yang berharga buat next experiment.
+
+### Experiment Documentation
+
+Tiap experiment WAJIB didokumentasi:
+
+- Dataset version + split
+- Hyperparameters (epochs, batch, learning rate, optimizer, image size)
+- Training platform + duration
+- Hasil evaluation (metrics + sample predictions)
+- What worked / what didn't — biar next experiment bisa belajar dari sini
+
+Upload semuanya ke <Link to="https://drive.google.com/drive/folders/1IO8BVnA2antwvnFPgqWHl4H_v7geFif0?usp=sharing">Research Report Drive</Link>. Pake <Link to="https://docs.google.com/document/d/1sLtLpA9QeOQZYJacwBMw-u1pnVL8ODSr5XTYZwGxpwc/edit?usp=sharing">template yang ada</Link> sebagai acuan.
+
+---
+
+## 2. Model Deployment
+
+### Export Format
+
+Export model sesuai kebutuhan hardware target:
+
+| Hardware              | Format Export                     |
+|-----------------------|-----------------------------------|
+| Intel CPU / NPU       | **OpenVINO**                      |
+| NVIDIA GPU            | TensorRT / ONNX                   |
+| Edge / embedded       | ONNX / NCNN / TFLite              |
+| Apple Silicon         | CoreML                            |
+
+### Prinsip: Accuracy First, Optimize Later
+
+Jangan langsung mikirin optimasi dari awal.
+
+1. **Bikin model yang akurat dulu** — pake FP32 precision, tanpa quantization, tanpa pruning
+2. **Validasi performa** — kalo akurasinya belum memenuhi, jangan lanjut ke step optimasi
+3. **Baru optimasi** — export ke format yang sesuai (OpenVINO, TensorRT, ONNX), tes ulang akurasinya
+
+Kalo akurasi turun setelah optimasi, evaluasi trade-off-nya. Kadang better pake format yang lebih akurat walaupun lebih lambat dikit.
+
+### Scenario-Based Testing
+
+**Jangan cuma ngandelin mAP.**
+
+mAP emang metrik standar, tapi aggregate metrics bisa **hide critical failures**. Model bisa punya mAP tinggi tapi gagal total di kondisi tertentu.
+
+Bikin **scenario test suite** yang mencakup kondisi real-world:
+
+```yaml
+# scenario_test_suite.yaml
+scenarios:
+  - name: "Siang cerah — lighting ideal"
+    images: ./test/siang_cerah/*.jpg
+    expected_min_ap: 0.85
+
+  - name: "Malam — low light"
+    images: ./test/malam/*.jpg
+    expected_min_ap: 0.70
+
+  - name: "Hujan — blur + refleksi air"
+    images: ./test/hujan/*.jpg
+    expected_min_ap: 0.60
+
+  - name: "Oklusi — objek tertutup sebagian"
+    images: ./test/oklusi/*.jpg
+    expected_min_ap: 0.55
+
+  - name: "Crowded — banyak objek dalam 1 frame"
+    images: ./test/crowded/*.jpg
+    expected_min_ap: 0.65
+```
+
+Ini memastikan model robust di kondisi kritis, bukan cuma rata-rata bagus.
+
+---
+
+## 3. Post Deployment
+
+Model udah jalan di production? Sekarang masuk fase monitoring dan continuous improvement.
+
+### Continuous Monitoring
+
+Pantau secara terus menerus:
+
+| Aspek                | Yang Dipantau                                      |
+|----------------------|----------------------------------------------------|
+| **Performance**      | mAP, precision, recall turun? Bisa jadi data drift |
+| **Data Anomalies**   | Distribusi gambar berubah? Exposure, angle, scene? |
+| **Inference Time**   | Slowdown? Bisa karena beban atau hardware issue    |
+| **Error Rate**       | Naiknya false positive / false negative            |
+
+### Selective Training Pipeline
+
+Seiring scaling, kamera baru nambah terus. Data dari tiap kamera nggak mungkin semuanya dipake — bakal makin lama makin besar dan nggak efisien.
+
+Solusi: **automated selective training pipeline**
+
+```
+Camera Baru
+    ↓
+Capture Data
+    ↓
+Filtering Otomatis
+    ├── Samplenya udah ada mirip di dataset? → Skip
+    ├── Kondisi baru (angle, lighting, scene)? → Masuk queue
+    └── Data anomaly detected? → Flag buat manual review
+          ↓
+Annotation (Roboflow)
+    ↓
+Incremental Training
+    ↓
+Validate → Eval
+    ↓
+Deploy update
+```
+
+Prinsipnya:
+
+- **Prioritize high-value data** — data yang nambah coverage (scene baru, angle baru, kondisi baru) lebih penting daripada data yang udah terwakili
+- **Maintain reproducibility** — tiap pipeline run dicatat: dataset version, model version, hyperparameters, hasil eval
+- **Automated review** — sebelum nambahin data ke dataset, ada filter otomatis buat cegah duplicate dan deteksi anomaly
+- **Human in the loop** — data anomaly tetep perlu dicek manual sebelum dipake training
+
+Dengan sistem ini, dataset tetap manageable, model makin robust seiring waktu, dan setiap perubahan bisa dilacak balik.
