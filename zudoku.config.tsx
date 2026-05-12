@@ -307,6 +307,12 @@ const config: ZudokuConfig = {
             },
             {
               "type": "doc",
+              "file": "development/focused_standard/llms/ai_agents",
+              "label": "AI Agent",
+              "icon": "bot"
+            },
+            {
+              "type": "doc",
               "file": "development/focused_standard/llms/rag",
               "label": "RAG",
               "icon": "search"
