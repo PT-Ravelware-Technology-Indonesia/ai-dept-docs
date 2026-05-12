@@ -1,0 +1,57 @@
+---
+title: Qdrant
+---
+
+**Qdrant** adalah vector database open source yang ditulis pake Rust. Kita pake Qdrant sebagai vector store buat RAG (Retrieval-Augmented Generation) — nyimpen dan nyari embeddings dengan performa tinggi.
+
+### Kenapa Qdrant?
+
+- **Cepat** — Rust-based, performa tinggi buat similarity search
+- **Filtering built-in** — bisa filter metadata sebelum search tanpa perlu tambahan tools
+- **Self-hosted** — jalan pake Docker, data tetap di kita
+- **REST + gRPC API** — integrasi dari bahasa apapun
+
+### Setup
+
+```bash
+docker run -p 6333:6333 -p 6334:6334 \
+    -v $(pwd)/qdrant_storage:/qdrant/storage \
+    qdrant/qdrant
+```
+
+- Port `6333` untuk REST API
+- Port `6334` untuk gRPC (lebih cepat)
+
+### Quick Start
+
+```python
+from qdrant_client import QdrantClient
+from qdrant_client.models import VectorParams, Distance
+
+client = QdrantClient(host="localhost", port=6333)
+
+# Buat collection
+client.create_collection(
+    collection_name="quickstart",
+    vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+)
+
+# Insert vector
+client.upsert(
+    collection_name="quickstart",
+    points=[
+        {
+            "id": 1,
+            "vector": [0.1] * 384,
+            "payload": {"text": "hello world"},
+        },
+    ],
+)
+
+# Search
+results = client.search(
+    collection_name="quickstart",
+    query_vector=[0.1] * 384,
+    limit=5,
+)
+```

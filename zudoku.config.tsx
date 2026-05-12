@@ -104,6 +104,12 @@ const config: ZudokuConfig = {
                   "file": "home/tools/langfuse",
                   "label": "Langfuse",
                   "icon": "bolt"
+                },
+                {
+                  "type": "doc",
+                  "file": "home/tools/qdrant",
+                  "label": "Qdrant",
+                  "icon": "bolt"
                 }
               ]
             },
@@ -321,6 +327,12 @@ const config: ZudokuConfig = {
               "type": "doc",
               "file": "development/focused_standard/llms/mcp",
               "label": "MCP",
+              "icon": "bot"
+            },
+            {
+              "type": "doc",
+              "file": "development/focused_standard/llms/rag",
+              "label": "RAG",
               "icon": "bot"
             },
             {

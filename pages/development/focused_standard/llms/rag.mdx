@@ -1,0 +1,340 @@
+---
+title: RAG (Retrieval-Augmented Generation)
+---
+
+**RAG (Retrieval-Augmented Generation)** adalah teknik yang ngasih LLM akses ke data eksternal di luar training-nya. 
+Daripada ngarepin LLM hapal semua data, kita **ambil data yang relevan dulu, baru dikasih ke LLM sebagai konteks**.
+
+---
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `flowchart LR
+    A[Document] --> B[Chunk]
+    B --> C[Embed]
+    C --> D[Vector Store<br/>Qdrant]
+
+    E[Query] --> F[Embed Query]
+    F --> G[Retrieve Top-K]
+    D --> G
+    G --> H[Query + Context]
+    H --> I[LLM Generate]
+    I --> J[Answer]`
+    }
+/>
+
+---
+
+### Kenapa RAG?
+
+| Problem             | Tanpa RAG                                  | Dengan RAG                                |
+|---------------------|--------------------------------------------|-------------------------------------------|
+| **Knowledge cutoff**| LLM cuma tau data sampai tanggal training  | Bisa akses dokumen terkini                 |
+| **Hallucination**   | LLM ngasal kalo nggak tau jawabannya       | Jawaban based on retrieved context         |
+| **Domain specific** | LLM general — nggak tau data internal kita | Bisa jawab pake dokumen internal           |
+| **Update data**     | Retrain full model tiap ada data baru      | Tinggal update document di vector store    |
+
+---
+
+## Chunking
+
+**Chunking** adalah proses motong dokumen jadi potongan-potongan kecil. Kenapa penting? Embedder punya **context window** terbatas, dan relevansi retrieval lebih bagus kalo chunk-nya fokus ke satu topik.
+
+### Strategi Chunking
+
+| Strategi            | Cara Kerja                                   | Cocok Buat                         |
+|---------------------|----------------------------------------------|------------------------------------|
+| **Fixed size**      | Potong per N tokens dengan overlap           | Dokumen umum, nggak perlu struktur |
+| **Recursive**       | Potong bertahap pake separator (paragraf → kalimat → kata) | Markdown, code, text terstruktur |
+| **Semantic**        | Deteksi boundary topik secara otomatis       | Konten panjang, butuh chunk kohesif|
+| **Document-based**  | Per halaman / per section                    | PDF, slide, dokumen berformat      |
+
+### Best Practices
+
+- **Chunk size: 512-1024 tokens** — cukup buat konteks meaningful, nggak terlalu panjang buat retrieval
+- **Overlap: 10-20%** — biar konteks nggak kepotong di sambungan chunk
+- **Sesuain sama embedder** — 768-1024 tokens untuk `text-embedding-3-small`, 512 untuk `all-MiniLM-L6-v2`
+
+### Contoh Chunking dengan LlamaIndex
+
+```python
+from llama_index.core.node_parser import SentenceSplitter
+
+splitter = SentenceSplitter(
+    chunk_size=1024,
+    chunk_overlap=200,
+)
+
+chunks = splitter.get_nodes_from_documents(documents)
+print(f"Total chunks: {len(chunks)}")
+print(f"Chunk 1: {chunks[0].text[:100]}...")
+```
+
+---
+
+## Vector Store — Qdrant
+
+**Qdrant** adalah vector database open source (Rust-based) yang kita pake buat nyimpen dan nge-search embeddings. Kenapa Qdrant:
+- **Cepat** — Rust, performa tinggi
+- **Filtering** — bisa filter metadata sebelum search (filter by date, category, dll)
+- **Self-hosted** — jalan pake Docker, data tetap di kita
+
+### Setup Qdrant
+
+```bash
+docker run -p 6333:6333 -p 6334:6334 \
+    -v $(pwd)/qdrant_data:/qdrant/storage \
+    qdrant/qdrant
+```
+
+- `6333` — REST API
+- `6334` — gRPC API (lebih cepat dari REST)
+
+Cek kalo udah jalan:
+
+```bash
+curl http://localhost:6333/collections
+# -> {"result":{"collections":[]}}
+```
+
+### Create Collection
+
+```python
+from qdrant_client import QdrantClient
+from qdrant_client.models import VectorParams, Distance
+
+client = QdrantClient(host="localhost", port=6333)
+
+client.create_collection(
+    collection_name="my_docs",
+    vectors_config=VectorParams(
+        size=1536,  # dimensions sesuai embedder (text-embedding-3-small = 1536)
+        distance=Distance.COSINE,
+    ),
+)
+```
+
+---
+
+## Indexing dengan LlamaIndex
+
+**LlamaIndex** adalah framework yang nyatuin document loading, chunking, embedding, dan indexing ke vector store jadi satu pipeline.
+
+### 1. Install
+
+```bash
+uv add llama-index llama-index-vector-stores-qdrant llama-index-embeddings-openai
+```
+
+### 2. Load + Chunk + Index
+
+```python title="index_pipeline.py"
+from llama_index.core import SimpleDirectoryReader, VectorStoreIndex
+from llama_index.core.node_parser import SentenceSplitter
+from llama_index.vector_stores.qdrant import QdrantVectorStore
+from llama_index.embeddings.openai import OpenAIEmbedding
+from qdrant_client import QdrantClient
+
+
+# ─── Konek ke Qdrant ──────────────────────────────────
+
+qdrant_client = QdrantClient(host="localhost", port=6333)
+
+vector_store = QdrantVectorStore(
+    client=qdrant_client,
+    collection_name="my_docs",
+)
+
+
+# ─── Embedder ─────────────────────────────────────────
+
+embed_model = OpenAIEmbedding(
+    model="text-embedding-3-small",
+    api_key="sk-...",
+)
+
+
+# ─── Load Documents ───────────────────────────────────
+
+documents = SimpleDirectoryReader("./docs").load_data()
+print(f"Loaded {len(documents)} documents")
+
+
+# ─── Chunk + Embed + Index ────────────────────────────
+
+index = VectorStoreIndex.from_documents(
+    documents,
+    embed_model=embed_model,
+    vector_store=vector_store,
+    transformations=[
+        SentenceSplitter(
+            chunk_size=1024,
+            chunk_overlap=200,
+        ),
+    ],
+    show_progress=True,
+)
+
+print("Indexing selesai! Data udah di Qdrant.")
+```
+
+### 3. Cek Index di Qdrant
+
+```bash
+curl http://localhost:6333/collections/my_docs
+# -> {"result":{"status":"green","points_count":42,...}}
+```
+
+---
+
+## Querying
+
+Begitu data udah di-index, kita bisa nge-query:
+
+### Basic Query
+
+```python title="query_basic.py"
+from llama_index.core import VectorStoreIndex
+from llama_index.vector_stores.qdrant import QdrantVectorStore
+from llama_index.embeddings.openai import OpenAIEmbedding
+from qdrant_client import QdrantClient
+
+
+vector_store = QdrantVectorStore(
+    client=QdrantClient(host="localhost", port=6333),
+    collection_name="my_docs",
+)
+
+index = VectorStoreIndex.from_vector_store(
+    vector_store=vector_store,
+    embed_model=OpenAIEmbedding(model="text-embedding-3-small"),
+)
+
+query_engine = index.as_query_engine(
+    similarity_top_k=3,
+)
+
+response = query_engine.query("Apa itu RAG dan kenapa kita perlu pake?")
+print(response)
+```
+
+### Custom Query dengan Filter
+
+```python
+from llama_index.core.vector_stores import FilterCondition, MetadataFilter
+
+query_engine = index.as_query_engine(
+    similarity_top_k=5,
+    filters=MetadataFilter(
+        condition=FilterCondition.AND,
+        filters=[
+            MetadataFilter(key="category", value="technical"),
+            MetadataFilter(key="year", value=2025, operator=">="),
+        ],
+    ),
+)
+```
+
+### Pipeline Lengkap — Query → Retrieve → Generate
+
+Kalo mau control penuh tiap langkah:
+
+```python title="rag_pipeline.py"
+from qdrant_client import QdrantClient
+from openai import OpenAI
+import numpy as np
+
+
+# ─── Setup ─────────────────────────────────────────────
+
+EMBED_MODEL = "text-embedding-3-small"
+LLM_MODEL = "gpt-4o-mini"
+
+llm = OpenAI(api_key="sk-...")
+qdrant = QdrantClient(host="localhost", port=6333)
+
+
+def embed(text: str) -> list[float]:
+    resp = llm.embeddings.create(model=EMBED_MODEL, input=text)
+    return resp.data[0].embedding
+
+
+# ─── Retrieve ──────────────────────────────────────────
+
+def retrieve(query: str, top_k: int = 3) -> list[str]:
+    query_vector = embed(query)
+
+    results = qdrant.search(
+        collection_name="my_docs",
+        query_vector=query_vector,
+        limit=top_k,
+    )
+
+    return [hit.payload["text"] for hit in results]
+
+
+# ─── Generate ──────────────────────────────────────────
+
+def generate(query: str, context_chunks: list[str]) -> str:
+    context = "\n\n---\n\n".join(context_chunks)
+
+    prompt = f"""Kamu adalah asisten yang jawab pertanyaan berdasarkan konteks yang dikasih.
+
+Konteks:
+{context}
+
+Pertanyaan: {query}
+
+Jawab berdasarkan konteks di atas. Kalo konteks nggak cukup, bilang aja."""  # noqa: E501
+
+    resp = llm.chat.completions.create(
+        model=LLM_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return resp.choices[0].message.content
+
+
+# ─── Run ───────────────────────────────────────────────
+
+query = "Apa langkah-langkah yang harus dilakukan kalo model kita underfitting?"
+chunks = retrieve(query)
+print(f"Retrieved {len(chunks)} chunks")
+
+answer = generate(query, chunks)
+print(f"\nAnswer:\n{answer}")
+```
+
+### Query dengan Reranking
+
+Kadang top-K hasil retrieval nggak semuanya relevan. Kita bisa kasih **reranker** untuk sortir ulang:
+
+```bash
+uv add llama-index-postprocessor-cohere-rerank
+```
+
+```python
+from llama_index.postprocessor.cohere_rerank import CohereRerank
+
+query_engine = index.as_query_engine(
+    similarity_top_k=5,
+    node_postprocessors=[
+        CohereRerank(
+            model="rerank-english-v3.0",
+            top_n=3,
+        ),
+    ],
+)
+
+response = query_engine.query("Bagaimana cara setup Qdrant?")
+print(response)
+```
+
+---
+
+### Referensi
+
+- <Link to="/home/tools/qdrant">Qdrant — Tool Guide</Link>
+- <Link to="https://qdrant.tech/documentation">Qdrant Documentation</Link>
+- <Link to="https://docs.llamaindex.ai">LlamaIndex Documentation</Link>
+- <Link to="https://platform.openai.com/docs/guides/embeddings">OpenAI Embeddings</Link>
