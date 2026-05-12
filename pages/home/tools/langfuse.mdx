@@ -1,0 +1,75 @@
+---
+title: Langfuse
+---
+
+<Link to="https://langfuse.com/">Langfuse</Link> adalah platform **open-source** untuk LLM observability dan evaluation. Langfuse memungkinkan kita melacak setiap LLM call, memonitor performa, dan mengevaluasi kualitas output secara terintegrasi.
+
+Kita pake Langfuse sebagai standard tool untuk observability LLM di departemen ini karena:
+
+- **Open-source** — bisa self-host, data tetap di infrastruktur kita
+- **Tracing** — melacak alur LLM call secara detail (prompt, completion, token, latency)
+- **Evaluation** — memberikan score ke response untuk quality monitoring
+- **Playground** — eksperimen prompt langsung dari dashboard
+- **Dataset** — menyimpan dataset untuk fine-tuning dan evaluasi
+
+## Self-Host dengan Docker
+
+Kita akan self-host Langfuse menggunakan Docker Compose dengan setup minimal (PostgreSQL + Langfuse).
+
+### 1. Setup Docker Compose
+
+Buat file `docker-compose.yml`:
+
+```yaml title="docker-compose.yml"
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse
+      POSTGRES_DB: langfuse
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  langfuse:
+    image: langfuse/langfuse:latest
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://langfuse:langfuse@postgres:5432/langfuse
+      NEXTAUTH_SECRET: your-secret-key-change-this
+      NEXTAUTH_URL: http://localhost:3000
+      SALT: your-salt-key-change-this
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+```
+
+### 2. Jalankan
+
+```bash
+docker compose up -d
+```
+
+Akses dashboard di `http://localhost:3000`.
+
+### 3. Buat User dan API Key
+
+1. Buka `http://localhost:3000`
+2. Buat akun admin pertama (register)
+3. Masuk ke **Settings → API Keys**
+
+Buat environment variables untuk aplikasi kamu:
+
+```txt title=".env"
+LANGFUSE_PUBLIC_KEY=pk-xxxxxxxxxxxx
+LANGFUSE_SECRET_KEY=sk-xxxxxxxxxxxx
+LANGFUSE_HOST=http://localhost:3000
+```
+
+Baca panduan lengkap tracing dan observability di halaman <Link to="/development/focused_standard/llms/llm_observability">LLM Observability Guide</Link>.

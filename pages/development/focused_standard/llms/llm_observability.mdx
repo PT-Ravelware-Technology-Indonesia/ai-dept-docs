@@ -1,0 +1,392 @@
+---
+title: LLM Observability
+---
+
+## Overview
+
+LLM punya tantangan unik dibanding software biasa — sifatnya **non-deterministik**, susah di-debug, dan biaya per-call-nya mahal. Observability untuk LLM penting karena:
+
+- **Black box** — kita nggak bisa lihat *kenapa* model jawab A bukan B tanpa tracing
+- **Token usage** — setiap call makan biaya; perlu monitor supaya nggak bengkak
+- **Latency** — LLM call bisa lambat, perlu tau bottleneck di mana
+- **Quality** — output LLM perlu dievaluasi, nggak cukup cek status code 200
+- **Debugging** — reproduce issue tanpa tracing itu hampir mustahil
+
+Tanpa observability, kita bakal buta total soal apa yang sebenernya terjadi di production.
+
+## Tools
+
+Kita menggunakan **Langfuse** — platform open-source untuk LLM observability, evaluation, dan prompt management. Panduan self-host Langfuse ada di halaman <Link to="/home/tools/langfuse">Langfuse</Link>.
+
+### Setup SDK
+
+```bash
+uv add langfuse
+```
+
+Inisialisasi client:
+
+```python title="langfuse_client.py"
+import os
+from langfuse import Langfuse
+
+langfuse = Langfuse(
+    secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+    public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+    host=os.getenv("LANGFUSE_HOST", "http://localhost:3000"),
+)
+```
+
+Variabel environment:
+
+```txt title=".env"
+LANGFUSE_PUBLIC_KEY=pk-xxxxxxxxxxxx
+LANGFUSE_SECRET_KEY=sk-xxxxxxxxxxxx
+LANGFUSE_HOST=http://localhost:3000
+```
+
+## Basic Tracing
+
+**Trace** adalah representasi dari satu "sesi" atau request. **Span** adalah unit kerja di dalam trace.
+
+```python title="basic_tracing.py"
+from openai import OpenAI
+from langfuse import Langfuse
+
+openai = OpenAI()
+langfuse = Langfuse()
+
+# Bikin trace
+trace = langfuse.trace(name="ask-llm")
+
+# Bikin span untuk satu LLM call
+span = trace.span(name="chat-completion")
+
+response = openai.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "Apa ibukota Indonesia?"}],
+)
+
+# Update span dengan detail LLM call
+span.end(
+    output=response.choices[0].message.content,
+    usage={
+        "input": response.usage.prompt_tokens,
+        "output": response.usage.completion_tokens,
+        "unit": "TOKENS",
+    },
+)
+
+# Update trace dengan output final
+trace.update(output=response.choices[0].message.content)
+```
+
+Setelah ini, kita bisa lihat trace di Langfuse dashboard dengan detail prompt, completion, token usage, dan latency.
+
+:::tip
+Semua data trace langsung muncul di dashboard `http://localhost:3000` tanpa perlu refresh.
+:::
+
+## Nested Span Tracing
+
+Satu LLM call jarang berdiri sendiri. Biasanya ada beberapa langkah: **generate → validate → format**. Nested spans membantu breakdown waktu di setiap langkah:
+
+```python title="nested_spans.py"
+from openai import OpenAI
+from langfuse import Langfuse
+
+openai = OpenAI()
+langfuse = Langfuse()
+
+
+def generate_response(user_input: str, parent_span):
+    """Generate initial response dari LLM."""
+    with parent_span.get_child(name="generate") as span:
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": user_input}],
+        )
+        text = response.choices[0].message.content
+        span.end(
+            output=text,
+            usage={
+                "input": response.usage.prompt_tokens,
+                "output": response.usage.completion_tokens,
+                "unit": "TOKENS",
+            },
+        )
+        return text
+
+
+def validate_response(text: str, parent_span):
+    """Validasi apakah response mengandung toxic content."""
+    with parent_span.get_child(name="validate") as span:
+        # Simulasi validasi
+        is_safe = not any(word in text.lower() for word in ["toxic", "spam"])
+        span.end(output={"is_safe": is_safe})
+        return is_safe
+
+
+def format_response(text: str, parent_span):
+    """Format response sesuai struktur yang diinginkan."""
+    with parent_span.get_child(name="format") as span:
+        formatted = {"content": text, "length": len(text)}
+        span.end(output=formatted)
+        return formatted
+
+
+# ── Execution ──────────────────────────────────────────
+
+trace = langfuse.trace(name="qa-pipeline")
+root_span = trace.span(name="process-query")
+
+text = generate_response("Jelaskan AI", root_span)
+is_safe = validate_response(text, root_span)
+
+if is_safe:
+    result = format_response(text, root_span)
+else:
+    result = {"error": "Response mengandung konten tidak aman"}
+
+root_span.end(output=result)
+trace.update(output=result)
+```
+
+Di dashboard, nested spans akan tampil sebagai tree — memudahkan lihat mana langkah yang paling lambat.
+
+| Span | Fungsi |
+|------|--------|
+| `generate` | LLM call utama |
+| `validate` | Cek keamanan output |
+| `format` | Rapihin output sesuai format |
+
+## Decorator with observe
+
+**`@observe()`** adalah decorator dari Langfuse yang otomatis bikin trace/span dari fungsi yang di-decorate. Cocok buat auto-instrumentasi tanpa manual `.span()`.
+
+<Callout type="info">
+Dengan `@observe()`, nama fungsi jadi nama trace/span secara otomatis.
+</Callout>
+
+```python title="observe_decorator.py"
+from openai import OpenAI
+from langfuse.decorators import observe
+
+openai = OpenAI()
+
+
+@observe()
+def ask_llm(prompt: str) -> str:
+    response = openai.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return response.choices[0].message.content
+
+
+@observe()
+def process_query(query: str) -> dict:
+    raw = ask_llm(f"Jawab pertanyaan ini: {query}")
+    summary = ask_llm(f"Buat ringkasan dari jawaban ini: {raw}")
+    return {"raw": raw, "summary": summary}
+
+
+result = process_query("Apa itu machine learning?")
+```
+
+Keuntungan `@observe()`:
+
+- **Auto-tracing** — setiap fungsi otomatis tercatat sebagai span
+- **Nested by default** — `ask_llm` dipanggil dari `process_query`, jadi nested span otomatis
+- **Minimal boilerplate** — nggak perlu `.trace()`, `.span()`, `.end()` manual
+- **Error tracking** — exception otomatis tercatat di trace
+
+### Konfigurasi
+
+```python
+from langfuse.decorators import observe
+
+
+@oberve(name="custom-span-name", as_type="span")
+def my_function():
+    pass
+```
+
+Parameter:
+
+| Parameter | Default | Deskripsi |
+|-----------|---------|-----------|
+| `name` | `function.__name__` | Nama trace/span |
+| `as_type` | `"trace"` | `"trace"` atau `"span"` |
+| `capture_input` | `True` | Otomatis catat argumen fungsi |
+| `capture_output` | `True` | Otomatis catat return value |
+
+## Evaluation Score
+
+**Score** adalah mekanisme untuk mengevaluasi kualitas output LLM secara numerik. Sangat berguna untuk monitoring dan regression testing.
+
+```python title="evaluation_score.py"
+from langfuse import Langfuse
+
+langfuse = Langfuse()
+
+# Bikin trace kayak biasa
+trace = langfuse.trace(name="customer-support")
+
+trace.span(name="generate-response").end(output="Halo, ada yang bisa dibantu?")
+
+# Tambah evaluation scores
+trace.score(
+    name="relevance",
+    value=0.9,        # 0.0 - 1.0
+    comment="Response sesuai dengan pertanyaan user",
+)
+
+trace.score(
+    name="correctness",
+    value=0.85,
+    comment="Informasi akurat, tidak ada hallucination",
+)
+```
+
+### Relevance Scores
+
+Relevance scores mengukur seberapa relevan response LLM terhadap input user. Bisa dihitung secara manual atau otomatis pake LLM sebagai evaluator.
+
+```python title="relevance_score.py"
+from openai import OpenAI
+from langfuse import Langfuse
+
+openai = OpenAI()
+langfuse = Langfuse()
+
+
+def calculate_relevance(query: str, response: str) -> dict:
+    """Pakai LLM sebagai evaluator buat ngitung relevance."""
+    eval_prompt = f"""
+    Evaluate the relevance of the response to the query.
+    Score from 0.0 (not relevant) to 1.0 (highly relevant).
+
+    Query: {query}
+    Response: {response}
+
+    Return only a JSON object with "score" (float) and "reason" (string).
+    """
+
+    result = openai.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": eval_prompt}],
+        response_format={"type": "json_object"},
+    )
+
+    import json
+    return json.loads(result.choices[0].message.content)
+
+
+# ── Usage ──────────────────────────────────────────────
+
+user_query = "Jam operasional toko?"
+llm_response = "Toko buka setiap hari jam 08.00 - 21.00 WIB."
+
+trace = langfuse.trace(name="qa-evaluation")
+trace.span(name="llm-response").end(output=llm_response)
+
+eval_result = calculate_relevance(user_query, llm_response)
+
+trace.score(
+    name="relevance",
+    value=eval_result["score"],
+    comment=eval_result["reason"],
+)
+```
+
+<Callout type="danger">
+Score relevance pake LLM otomatis akan nambah biaya token. Pertimbangkan sampling (e.g. evaluasi 10% dari total request).
+</Callout>
+
+## Basic Agent Tracing
+
+Agent biasanya punya **loop** — beberapa langkah yang saling terkait. Trace agent dengan spans per step biar keliatan jelas alurnya.
+
+Contoh tracing untuk ReAct agent (think → search → answer):
+
+```python title="agent_tracing.py"
+from openai import OpenAI
+from langfuse import Langfuse
+
+openai = OpenAI()
+langfuse = Langfuse()
+
+SYSTEM_PROMPT = {
+    "role": "system",
+    "content": (
+        "You are a research assistant. Decide whether to search "
+        "for more information or provide a final answer."
+    ),
+}
+
+
+def call_llm(messages: list[dict]) -> str:
+    return (
+        openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+        )
+        .choices[0]
+        .message.content
+    )
+
+
+def run_agent(question: str) -> str | None:
+    trace = langfuse.trace(
+        name="agent-run",
+        input=question,
+        metadata={"agent_type": "research"},
+    )
+
+    messages = [SYSTEM_PROMPT, {"role": "user", "content": question}]
+    max_steps = 5
+
+    for step in range(max_steps):
+        with trace.span(name=f"think-step-{step + 1}") as span:
+            response = call_llm(messages)
+            span.end(output=response, usage={"input": 0, "output": 0, "unit": "TOKENS"})
+
+            if "[SEARCH]" in response:
+                query = response.replace("[SEARCH]", "").strip()
+
+                with trace.span(name=f"search-step-{step + 1}") as search_span:
+                    search_result = f"Hasil pencarian untuk '{query}'"
+                    search_span.end(output=search_result)
+
+                messages.append({"role": "assistant", "content": response})
+                messages.append({"role": "user", "content": search_result})
+
+            else:
+                trace.update(output=response)
+                return response
+
+    return None
+
+
+# ── Run ────────────────────────────────────────────────
+
+result = run_agent("Apa itu observability?")
+```
+
+Di dashboard, trace akan nampilin semua steps dengan timing masing-masing:
+
+| Step | Deskripsi |
+|------|-----------|
+| `think-step-1` => `search-step-1` | Agent mutusin buat search, lalu search |
+| `think-step-2` | Agent baca hasil search, lalu jawab |
+
+Ini sangat membantu pas nge-debug kenapa agent:
+
+- Kehabisan **waktu** (ada step yang terlalu lambat)
+- Loop **terus-terusan** (decision nggak jelas)
+- **Salah** pilih tools (search ketika seharusnya jawab langsung)
+
+<Callout type="info">
+Buat agent yang lebih kompleks, pertimbangkan nested span per function — lihat bagian **Nested Span Tracing**.
+</Callout>
