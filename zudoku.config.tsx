@@ -376,24 +376,16 @@ const config: ZudokuConfig = {
     items: [
       "/monitoring_iteration",
       {
-        "type": "category",
+        "type": "doc",
+        "file": "monitoring_iteration/documentation_guide",
         "label": "Documentation Guide",
-        "collapsible": true,
-        "collapsed": true,
-        "icon": "book",
-        "items": [
-
-        ]
+        "icon": "book"
       },
       {
-        "type": "category",
+        "type": "doc",
+        "file": "monitoring_iteration/bug_fixing",
         "label": "Bug Fixing",
-        "collapsible": true,
-        "collapsed": true,
-        "icon": "bug",
-        "items": [
-
-        ]
+        "icon": "bug"
       },
     ],
     },

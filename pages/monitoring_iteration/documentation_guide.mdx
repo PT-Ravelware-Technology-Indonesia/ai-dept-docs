@@ -1,0 +1,65 @@
+---
+title: Documentation Guide
+---
+
+Dokumentasi project terbagi jadi **tiga lapisan** yang masing-masing punya tujuan dan tempat berbeda:
+
+| Lapisan              | Tempat                         | Isi                                                    |
+|----------------------|--------------------------------|--------------------------------------------------------|
+| **README**           | Repository GitHub              | Setup, cara run, dependencies, basic usage             |
+| **Project Documentation** | Wiki ini (halaman Project Documentation) | Big picture: arsitektur, integrasi, konteks bisnis |
+| **Changelog**        | GitHub Releases / Changelog    | Bug fix, update fitur, tracking tiap rilis             |
+
+---
+
+## README (Repository)
+
+Ada di root setiap repository GitHub. Isinya hal-hal praktis yang dibutuhin developer yang mau pake atau ngembangin project:
+
+- **Deskripsi project** — 1-2 kalimat
+- **Prerequisites** — apa aja yang harus diinstall
+- **Setup instructions** — langkah-langkah dari clone sampe bisa run
+- **Environment variables** — list `.env` yang dibutuhin
+- **Cara run** — development mode
+- **Testing** — gimana jalanin test
+
+README nggak usah panjang — cukup bikin developer baru bisa jalan dalam 5 menit.
+
+## Project Documentation (Wiki)
+
+Halaman **Project Documentation** di docs ini beda fokus — ini buat **big picture** yang nggak cocok di README:
+
+- **Arsitektur** — diagram system design, alur data antar service
+- **Integrasi** — gimana system kita connect ke system lain (API eksternal, database, hardware)
+- **Konteks bisnis** — kenapa fitur ini dibuat, siapa usernya, gimana dampak ke bisnis
+- **Keputusan teknis** — kenapa pake pendekatan A daripada B
+- **Model card** — arsitektur model, training config, baseline performa, limitations
+
+Ini konten yang **jarang berubah** dan lebih cocok dibaca pas onboarding atau review arsitektur.
+
+## Changelog (GitHub Releases)
+
+**Bug fix, update, dan perubahan tracking** dilakukan via **GitHub Releases** / Changelog di repository masing-masing. Nggak perlu diduplikasi ke wiki.
+
+Tiap release wajib nyantumin:
+
+```markdown
+## [1.2.0] - 2026-05-12
+
+### Added
+- Fitur baru X
+
+### Fixed
+- Bug Y di komponen Z
+
+### Changed
+- Update dependency A ke versi B
+
+### Removed
+- Hapus endpoint deprecated C
+```
+
+Dengan tiga lapisan ini, dokumentasi tetap rapi:
+- **README** buat yang mau langsung praktik
+- **Project Documentation** buat yang mau paham konteks
+- **Changelog** buat tracking perubahan dan bug fix

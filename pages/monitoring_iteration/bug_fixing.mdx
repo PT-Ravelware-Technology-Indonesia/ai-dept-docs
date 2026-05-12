@@ -1,0 +1,102 @@
+---
+title: Bug Fixing
+---
+
+Bug adalah hal yang nggak bisa dihindari. Yang penting bukan zero bug — tapi **gimana handle bug dengan sistem yang jelas**.
+
+## Priority Matrix
+
+Tiap bug dikategorikan berdasarkan **impact** dan **urgency**:
+
+| Priority | Impact                                     | SLA (Response) | SLA (Fix)      |
+|----------|--------------------------------------------|----------------|----------------|
+| **Critical** | Sistem down, data loss, security breach | 1 jam          | 4 jam          |
+| **High**     | Fitur utama rusak, performance drop signifikan | 4 jam      | 24 jam         |
+| **Medium**   | Fitur non-kritis rusak, UI/UX issue      | 24 jam         | 3 hari         |
+| **Low**      | Typo, minor visual, nice-to-have         | 1 minggu       | Next release   |
+
+### Contoh Kategorisasi
+
+| Bug                                                   | Priority |
+|-------------------------------------------------------|----------|
+| API endpoint /predict return 500 terus               | Critical |
+| Model nggak bisa detect objek di kondisi malam       | High     |
+| Tombol export laporan posisinya geser                 | Medium   |
+| Ada typo di tooltip                                   | Low      |
+
+## Flow Bug Fixing
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `flowchart TD
+    A[Lapor Bug] --> B[Triage]
+    B --> C{Priority?}
+    C -->|Critical| D[Immediate Fix]
+    C -->|High| E[Masuk Sprint]
+    C -->|Medium/Low| F[Backlog]
+
+    D --> G[Hellcat Release]
+    E --> H[Regular Release]
+    F --> I[Planning Next Sprint]
+
+    G --> J[Verify Fix]
+    H --> J
+    I --> E
+
+    J --> K[Update Documentation]
+    K --> L[Close Ticket]`
+    }
+/>
+
+## Triage Process
+
+1. **User/QA lapor bug** — lewat channel yang udah ditentuin (Slack, Jira, Trello, etc.)
+2. **Lead engineer atau PM** ngecek:
+   - Apakah ini beneran bug atau expected behavior?
+   - Seberapa parah impact-nya?
+   - Ada workaround sementara?
+3. **Tentukan priority** — pake matrix di atas
+4. **Assign ke engineer** — sesuai priority dan kapasitas tim
+5. **Fix & verify** — engineer fix, QA atau reporter verify
+6. **Deploy & close** — setelah verified
+
+## Hellcat vs Scheduled Release
+
+| Jenis Release  | Kapan Dipake                           | Proses                                |
+|----------------|----------------------------------------|---------------------------------------|
+| **Hellcat**    | Critical bug yang harus segera fix      | Fix langsung di branch, review cepat, deploy tanpa nunggu rilis terjadwal |
+| **Scheduled**  | High/Medium/Low bug                    | Masuk sprint planning, ikut rilis normal |
+
+Hellcat itu ada konsekuensinya — setelah hellcat, harus ada **post-mortem**:
+- Kenapa bug bisa tembus ke production?
+- Apa yang perlu diperbaiki di proses (bukan cuma code)?
+- Gimana cara deteksi lebih awal next time?
+
+## Template Laporan Bug
+
+```markdown
+## Bug Report
+
+**Title**: [Ringkasan singkat bug]
+
+**Environment**: Production / Staging / Development
+
+**Priority**: Critical / High / Medium / Low
+
+**Steps to Reproduce**:
+1. Buka halaman ...
+2. Klik tombol ...
+3. Lihat error ...
+
+**Expected**: [Apa yang seharusnya terjadi]
+
+**Actual**: [Apa yang terjadi]
+
+**Screenshots/Logs**: [Lampiran]
+
+**Workaround**: [Kalo ada]
+
+**Reported by**: [Nama]
+**Date**: [Tanggal]
+```

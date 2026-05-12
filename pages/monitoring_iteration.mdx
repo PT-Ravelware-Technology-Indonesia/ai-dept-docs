@@ -1,3 +1,28 @@
 ---
 title: "Monitoring & Iteration"
 ---
+
+Setelah deployment, sistem masuk fase **monitoring & iteration** — fase berkelanjutan yang nggak ada akhirnya. Tujuan utamanya: **jaga performa tetap stabil** dan **terus improve** seiring waktu.
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `flowchart LR
+    A[Deploy] --> B[Monitor]
+    B --> C{Ada Issue?}
+    C -->|Bug| D[Bug Fixing]
+    C -->|Performa Turun| E[Iterate Model]
+    C -->|Perubahan Fitur| F[Update Documentation]
+    D --> G[Patch Release]
+    E --> G
+    F --> G
+    G --> B`
+    }
+/>
+
+Dua pilar utama di fase ini:
+
+1. **Documentation Guide** — standarisasi cara nulis dan maintain dokumentasi project supaya nggak ada knowledge loss
+2. **Bug Fixing** — flow pelaporan, triage, dan perbaikan bug yang jelas biar nggak chaos
+
+Panduan lengkap ada di masing-masing sub-section.
