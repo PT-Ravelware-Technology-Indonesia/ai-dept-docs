@@ -401,23 +401,10 @@ const config: ZudokuConfig = {
         "icon": "scale"
       },
       {
-        "type": "category",
+        "type": "doc",
+        "file": "project_documentation/INS_image_compression",
         "label": "INS Image Compression",
-        "collapsible": true,
-        "collapsed": true,
-        "icon": "file-archive",
-        "items": [
-          {
-            "type": "doc",
-            "file": "project_documentation/ins_image_compression/technical_doc",
-            "label": "Technical Documentation"
-          },
-          {
-            "type": "doc",
-            "file": "project_documentation/ins_image_compression/for_business",
-            "label": "For Business"
-          }
-        ]
+        "icon": "file-archive"
       },
     ],
     },

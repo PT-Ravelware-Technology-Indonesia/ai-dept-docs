@@ -1,0 +1,149 @@
+---
+title: INS Image Compression
+---
+
+|        |   |
+|--------|------|
+| **Link Repo** | <Link to="https://github.com/PT-Ravelware-Technology-Indonesia/image-compression-ins">https://github.com/PT-Ravelware-Technology-Indonesia/image-compression-ins</Link> |
+|**Repo License Manager**|<Link to="https://github.com/PT-Ravelware-Technology-Indonesia/compression-license-manager">https://github.com/PT-Ravelware-Technology-Indonesia/compression-license-manager</Link>|
+| **Author (Backend)** | Mochamad Arya El Rumy |
+| **Frontend** | Abdan Syaqura Muqaffi |
+| **Project Manager** | Erina Subekti |
+
+## Project Overview
+
+Image Compression INS merupakan aplikasi web fullstack untuk mengotomasi proses kompresi gambar .jpg menggunakan ffmpeg dan dibuat menggunakan [FastAPI](https://fastapi.tiangolo.com/) backend and static frontend. dengan *core features* berikut:
+
+- Directory scanning untuk file .jpg
+- Image compression menggunakan FFmpeg
+- User authentication and management
+- Dashboard dengan metrics
+- Job Tracking
+- File backup and scheduling
+
+Tech stack utama: [SQLModel](https://sqlmodel.tiangolo.com/) untuk ORM, [Alembic](https://alembic.sqlalchemy.org/) untuk migrasi database, dan [uv](https://docs.astral.sh/uv/) untuk dependency management.
+
+---
+
+## Konteks Bisnis
+
+INS Image Compression dibuat untuk menjawab kebutuhan operasional INS yang punya storage besar berisi file .jpg — ukurannya sampai **terabyte** dengan struktur folder yang nested dan kompleks. Tujuan utamanya:
+
+- **Menghemat storage** — kompresi gambar tanpa mengurangi kualitas signifikan
+- **Otomatisasi** — proses scanning dan kompresi berjalan recurring tanpa manual intervensi
+- **Auditability** — tiap file yang dikompres tercatat, termasuk backup original-nya
+
+### License Manager
+
+License Manager adalah sistem terpisah yang dipake untuk:
+
+1. **Memantau hasil kompresi** — Bisdev **charge per GB** setelah batas tertentu, jadi semua metrik kompresi dicatat dan dilaporkan lewat License Manager
+2. **Melindungi distribusi** — mencegah aplikasi dipake tanpa izin di server yang tidak terdaftar
+
+---
+
+## Arsitektur
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `flowchart TD
+    A[Windows Server INS] --> B[Image Compression App<br/>FastAPI + SQLite]
+    B --> C[SQLite Database]
+    B --> D[FFmpeg]
+    B --> E[File System]
+
+    A --> F[License Manager]
+    F --> G[(License DB)]
+
+    subgraph Scheduling
+        H[Schedule Scan] --> B
+        I[Schedule Kompresi] --> B
+    end
+
+    B --> J[Backup Original<br/>di lokasi asli]`
+    }
+/>
+
+Aplikasi berjalan sebagai **Windows Service** (pake NSSM) karena server INS berbasis Windows dan kompresi perlu berjalan di background terus-menerus.
+
+### Kenapa SQLite?
+
+Kita pake SQLite daripada PostgreSQL/MySQL karena:
+
+- **Mudah distribute** — tinggal copy file database, nggak perlu setup database server terpisah
+- **Hemat storage** — nggak perlu resource tambahan buat database server
+- **Single-user** — aplikasi cuma dipake oleh satu instansi di satu server, nggak perlu concurrency tinggi
+
+### Engine Kompresi: FFmpeg
+
+FFmpeg adalah engine utama buat kompresi gambar. Kita pake FFmpeg karena:
+
+- Mature dan stable
+- Preset kompresi yang bisa di-tuning
+- Support batch processing
+
+---
+
+## Alur Proses
+
+### 1. Schedule Scan
+
+File di server INS jumlahnya **sangat banyak dan besar** (sampai TB, struktur folder nested). Kita nggak bisa scan semua dalam satu waktu. Makanya scan harus **terjadwal dan recurring**.
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `
+        flowchart LR
+    A[Schedule Scan] --> B[Scan Directory]
+    B --> C[List file .jpg ke Database]
+    C --> D[Update status: scanned]
+        `
+    }
+/>
+
+- Scan bisa **sekali jalan** atau **recurring** (tiap jam/hari/minggu)
+- Scan **nggak mindahin file** — file tetap di lokasi aslinya
+- Hasil scan: daftar file .jpg tersimpan di database dengan metadata (path, ukuran, status)
+
+### 2. Kompresi
+
+Kompresi jalan berdasarkan hasil scan — file yang udah di-scan tapi belum dikompres bakal diproses.
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `
+        flowchart LR
+    A[Schedule Kompresi] --> B[Ambil file dari DB<br/>yang belum dikompres]
+    B --> C[Kompres pake FFmpeg]
+    C --> D[Simpan hasil di lokasi sama]
+    C --> E[Copy original ke backup]
+    D --> F[Update status: compressed]
+        `
+    }
+/>
+
+- Kompresi **folder/directory agnostic** — nggak peduli struktur folder, yang penting file .jpg yang belum dikompres
+- Kompresi juga **bisa di-schedule** (sekali atau recurring)
+- **File hasil kompresi tetap di lokasi aslinya** — kita nggak boleh mindahin file
+- **Original file di-copy sebagai backup** — backup bisa dihapus manual oleh user kalo udah nggak diperlukan
+
+### Kenapa Scheduling?
+
+Karena **file sangat banyak dan besar**, scanning dan kompresi akan memakan waktu sangat lama (bisa berhari-hari). Makanya perlu scheduling biar:
+
+- Proses jalan di **waktu-waktu tertentu** (misal malam hari)
+- Bisa **berjalan autonomous** tanpa perlu manual trigger
+- Bisa **recurring** — scan dan kompresi berjalan kontinu sampai semua file terproses
+
+---
+
+## Deployment
+
+Aplikasi berjalan di **Windows Server INS** sebagai **Windows Service** menggunakan NSSM. Ini memastikan:
+
+- Aplikasi **auto-start** pas server nyala
+- Jalan di **background** tanpa perlu user login
+- **Restart otomatis** kalo crash
