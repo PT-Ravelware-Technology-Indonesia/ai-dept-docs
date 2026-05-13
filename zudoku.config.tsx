@@ -139,32 +139,7 @@ const config: ZudokuConfig = {
               "file":"research/report_example",
               "label": "Report Example",
               "icon": "clipboard"
-            },
-            {
-              "type": "doc",
-              "file": "research/computer_vision_research",
-              "label": "Computer Vision",
-              "icon": "eye"
-            },
-            {
-              "type": "doc",
-              "file": "research/machine_learning_research",
-              "label": "Machine Learning",
-              "icon": "brain",
-
-            },
-            {
-              "type": "doc",
-              "file":"research/llms_research",
-              "label": "LLMs",
-              "icon": "bot"
-            },
-            {
-              "type": "doc",
-              "file": "research/business_automation",
-              "label": "Business Automation",
-              "icon": "settings"
-            },
+            }
           ]
         }
       ],
@@ -284,16 +259,6 @@ const config: ZudokuConfig = {
         },
         {
           "type": "category",
-          "label": "Machine Learning",
-          "collapsible": true,
-          "collapsed": true,
-          "icon": "brain",
-          "items": [
-
-          ]
-        },
-        {
-          "type": "category",
           "label": "LLMs",
           "collapsible": true,
           "collapsed": true,
@@ -329,6 +294,16 @@ const config: ZudokuConfig = {
               "label": "LLM Observability",
               "icon": "eye"
             }
+          ]
+        },
+                {
+          "type": "category",
+          "label": "Machine Learning",
+          "collapsible": true,
+          "collapsed": true,
+          "icon": "brain",
+          "items": [
+
           ]
         },
         {
