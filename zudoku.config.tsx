@@ -406,6 +406,12 @@ const config: ZudokuConfig = {
         "label": "INS Image Compression",
         "icon": "file-archive"
       },
+      {
+        "type": "doc",
+        "file": "project_documentation/wifi_csi",
+        "label": "WiFi CSI",
+        "icon": "wifi"
+      },
     ],
     },
     ],

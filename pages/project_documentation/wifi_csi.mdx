@@ -1,0 +1,164 @@
+---
+title: WiFi CSI
+---
+
+|               |                                                                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **Link Repo** | <Link to="https://github.com/AryaElRumy/csi-temperature-cnn-lab.git">https://github.com/AryaElRumy/csi-temperature-cnn-lab.git</Link> |
+| **Author**    | Mochamad Arya El Rumy                                                                                                                 |
+
+## Project Overview
+
+Repository ini berisi **dua notebook eksplorasi** untuk mentrainig model CNN menggunakan data WiFi **Channel State Information (CSI)** :
+
+1. **`csi-to-temperature-lab.ipynb`** — Regresi suhu ruangan dari amplitude CSI pake **CNN**. Notebook ini udah dilengkapi widget interaktif buat ngubah arsitektur CNN secara real-time.
+2. **`csi_data.ipynb`** — Eksplorasi awal struktur data CSI pake **dataset Widar 3.0**, pakai **GRU** buat klasifikasi gesture.
+
+---
+
+## Notebook 1: CSI-to-Temperature CNN
+
+### Tujuan Riset
+
+CSI amplitude bisa terpengaruh sama **thermal noise** — makin tinggi suhu, makin turun amplitude sinyal secara rata-rata. Notebook ini nyoba liat apakah **CNN bisa belajar pola perubahan amplitude** ini buat memprediksi suhu ruangan.
+
+### Dataset
+
+Struktur file log CSI per baris:
+
+```
+CSI_DATA,<mac>,<rssi>,<channel>,...,<timestamp>,<temperature>,[<imag1> <real1> <imag2> <real2> ...]
+```
+
+- Setiap baris = satu packet WiFi
+- **192 subcarrier** → masing-masing punya pasangan (imag, real)
+- **Temperature** = label di kolom ke-24
+- Amplitude tiap subcarrier: `|H| = sqrt(real² + imag²)`
+
+Dummy dataset di-generate dengan variasi suhu: **20°C, 22°C, 25°C, 28°C, 32°C** (train) dan **21°C, 30°C** (test — unseen).
+
+untuk percobaan real dapat dilakukan pengumpulan dataset dengan struktur yang sama.
+
+### Pipeline
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `
+        flowchart LR
+    A[CSI Log File] --> B[Parse CSV]
+    B --> C["Amplitude Matrix (N_packets x 192 SC)"]
+    C --> D[MinMaxScaler fit on train]
+    D --> E["Sliding Window (50 packets)"]
+    E --> F["Transpose (192, 50, 1) | SC, time, channel"]
+    F --> G[CNN]
+    G --> H["Temperature (float)"]
+        `
+    }
+/>
+
+### Sliding Window
+
+Setiap **50 packet berurutan** di-slide jadi satu sample input CNN. Targetnya adalah suhu di packet ke-51. Ini penting soalnya:
+
+- Ngasih konteks temporal ke CNN
+- **Nggak nyampurin** antar session — window boundaries nggak pernah lintas file
+
+```
+Input shape → (samples, 192 subcarriers, 50 time_steps, 1 channel)
+```
+
+### Interactive CNN Architecture
+
+Notebook ini punya **widget interaktif** (pake `ipywidgets`) yang bisa diatur sebelum training:
+
+| Parameter | Range | Fungsi |
+| --------- | ----- | ------ |
+| Conv Blocks | 1 – 4 | Jumlah blok konvolusi |
+| Filters | 8, 16, 32, 64, 128 | Filter pertama (double tiap blok, max 256) |
+| Kernel Size | 3, 5, 7 | Ukuran kernel conv2D |
+| Activation | relu, leaky_relu, elu, gelu, swish, dll | Fungsi aktivasi |
+| Pooling | MaxPool, AvgPool, None | Pooling antar blok |
+| Global Pooling | GlobalAvgPool, GlobalMaxPool, Flatten | Pooling akhir sebelum dense |
+| BatchNorm | On/Off | Batch Normalization tiap blok |
+| Dense Layers | 1 – 3 | Jumlah dense layer |
+| Dense Units | 32, 64, 128, 256 | Neuron per dense layer |
+| Dropout | 0.0 – 0.6 | Dropout rate |
+| L2 Reg | 0, 0.0001, 0.001, 0.01 | L2 regularization |
+| Learning Rate | 0.01, 0.001, 0.0001 | Adam optimizer |
+| Epochs | 5 – 100 | Jumlah epoch |
+| Batch Size | 8, 16, 32, 64 | Batch size |
+
+Setiap aktivasi punya **info tooltip** yang muncul pas dipilih.
+
+### Training
+
+- Optimizer: **Adam** (configurable LR)
+- Loss: **MSE**
+- Metric: **MAE** (ditampilkan dalam °C real)
+- Validation: 10% split dari training data
+- Output: loss curves + MAE dalam °C
+
+:::tip
+
+Hasil test MAE dari dummy dataset: **~1.8°C**. Performa di data real mungkin beda — ini cuma bukti konsep.
+
+:::
+
+---
+
+## Notebook 2: Gesture Recognition (Widar 3.0)
+
+### Tujuan
+
+Notebook ini adalah **eksplorasi awal** buat ngerti struktur data CSI. Pake dataset **Widar 3.0** yang udah publik, isinya **Doppler Spectrum** dari 6 gerakan tangan.
+
+### Dataset Widar 3.0
+
+Data berupa file `.mat` dengan key `doppler_spectrum`:
+
+| Dimensi | Arti |
+| ------- | ---- |
+| 6 | Rx WiFi receiver ID (antenna) |
+| 121 | Doppler frequency bins |
+| T | Time steps (variable per session) |
+
+Sumber: [Widar 3.0](http://tns.thss.tsinghua.edu.cn/widar3.0/) — Tsinghua University.
+
+### Preprocessing
+
+- **Downsample** 10× buat ngurangin temporal resolution
+- **Normalization** per channel: `(x - min) / (max - min)`
+- **Zero-padding**: semua session di-pad ke `T_MAX`
+- Final shape: `(N, T_MAX, 6, 121, 1)`
+
+### Model
+
+Arsitektur pake **GRU** (Gated Recurrent Unit):
+
+```text
+Input (T_MAX, 6, 121, 1)
+  → Reshape/TimeDistributed
+  → Bidirectional GRU (64 units)
+  → Dense + Dropout
+  → Output: 6 classes (gestures)
+```
+
+6 gestures yang diklasifikasi: **Push & Pull, Sweep, Clap, Slide, Draw Circle, Draw Cross** (label 1–6).
+
+
+---
+
+
+## Tech Stack
+
+| Kategori | Library | Kegunaan |
+| -------- | ------- | -------- |
+| Framework DL | TensorFlow / Keras | CNN & GRU model |
+| Numerik | NumPy | Array operations, CSI parsing |
+| Visualization | Matplotlib | Loss curves, subcarrier plots |
+| Preprocessing | scikit-learn | MinMaxScaler, train/test split |
+| Interactive | ipywidgets | Widget arsitektur CNN |
+| Data loading | scipy.io | Load .mat Widar dataset |
+| Statistics | seaborn | Visualisasi distribusi |
+| Package Manager | uv (Astral) | Dependency & env management |
