@@ -387,6 +387,12 @@ const config: ZudokuConfig = {
         "label": "WiFi CSI",
         "icon": "wifi"
       },
+      {
+        "type": "doc",
+        "file": "project_documentation/people_counting",
+        "label": "People Counting",
+        "icon": "users"
+      },
     ],
     },
     ],

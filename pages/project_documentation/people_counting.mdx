@@ -1,0 +1,84 @@
+---
+title: People Counting
+---
+
+|        |   |
+|--------|------|
+| **Link Repo AI Engine** | <Link to="https://github.com/PT-Ravelware-Technology-Indonesia/people-counting-ai">https://github.com/PT-Ravelware-Technology-Indonesia/people-counting-ai</Link> |
+| **Author AI Engine** | Abdurrahman Al Adalah |
+| **Link Repo Backend** | <Link to="https://github.com/PT-Ravelware-Technology-Indonesia/people-counting-api">https://github.com/PT-Ravelware-Technology-Indonesia/people-counting-api</Link> |
+| **Author Backend** | Mochamad Arya El Rumy |
+| **Link Repo Frontend** | <Link to="https://github.com/PT-Ravelware-Technology-Indonesia/people-counting-web">https://github.com/PT-Ravelware-Technology-Indonesia/people-counting-web</Link> |
+| **Author Frontend** | Deepseek V4 Flash |
+| **Project Manager** | TBA |
+
+## Project Overview
+
+People Counting merupakan aplikasi web untuk mendeteksi dan menghitung jumlah orang secara otomatis menggunakan computer vision. Dengan *core features* berikut:
+
+- Deteksi orang real-time dari kamera/CCTV
+- Visual counting dashboard
+- Riwayat dan tren data per periode
+- Multi-camera support
+- Export laporan
+
+---
+
+## Konteks Bisnis
+
+People Counting dibuat untuk menjawab kebutuhan monitoring dan analisis jumlah pengunjung di suatu area. Tujuan utamanya:
+
+- **Monitoring real-time** — mengetahui jumlah orang di suatu area secara langsung
+- **Data-driven decision** — analisis tren pengunjung untuk kebutuhan operasional
+- **Otomatisasi** — menggantikan manual counting yang rentan error
+
+---
+
+## Arsitektur
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `flowchart TD
+    A[Kamera/CCTV] --> B[Stream Processor<br/>Python + OpenCV]
+    B --> C[Detection Engine<br/>Model Computer Vision]
+    C --> D[API Server<br/>FastAPI]
+    D --> E[(Database)]
+    D --> F[Web Dashboard<br/>Frontend]
+    F --> G[User]
+    D --> H[Export Service]`
+    }
+/>
+
+---
+
+## Alur Proses
+
+### 1. Deteksi
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `flowchart LR
+    A[Stream Kamera] --> B[Frame Capture]
+    B --> C[Inference Model]
+    C --> D[Daftar Deteksi]
+    D --> E[Update Count]`
+    }
+/>
+
+### 2. Penyimpanan Data
+
+Setiap deteksi dicatat ke database dengan informasi timestamp, jumlah, dan sumber kamera untuk keperluan analisis dan pelaporan.
+
+---
+
+## Tech Stack
+
+| Teknologi | Kegunaan |
+|-----------|----------|
+| Backend | TBA |
+| Frontend | TBA |
+| Database | TBA |
+| Computer Vision | TBA |
+| Deployment | TBA |
