@@ -393,6 +393,12 @@ const config: ZudokuConfig = {
         "label": "People Counting",
         "icon": "users"
       },
+      {
+        "type": "doc",
+        "file": "project_documentation/gateway_musashi",
+        "label": "Gateway Musashi",
+        "icon": "server"
+      },
     ],
     },
     ],
