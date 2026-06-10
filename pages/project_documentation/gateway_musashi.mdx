@@ -5,21 +5,25 @@ title: INS Image Compression
 |        |      |
 |--------|------|
 | **Link Repo** | <Link to="https://github.com/PT-Ravelware-Technology-Indonesia/gateway-musashi">https://github.com/PT-Ravelware-Technology-Indonesia/gateway-musashi</Link> |
-| **Author (Backend)** | Mochamad Arya El Rumy |
+| **Link Drive** | <Link to="https://drive.google.com/drive/folders/1KNtxStY2qwRmc26tXqKx2rEWjbTk57II?usp=sharing">https://drive.google.com/drive/folders/1KNtxStY2qwRmc26tXqKx2rEWjbTk57II?usp=sharing</Link> |
+| **Author** | Mochamad Arya El Rumy |
 | **Project Manager** | Agung |
 
 ## Project Overview
 
 Gateway Musashi merupakan program gateway yang diprogrm untuk kebutuhan smart oil station Musashi. Program v2.0.0 merupakan hasil rewrite dari program sebelumnya dengan mengganti sistem verifikasi menjadi token-basesd.
 
-Tech stack utama: Fastapi, [SQLModel](https://sqlmodel.tiangolo.com/) untuk ORM, [Alembic](https://alembic.sqlalchemy.org/) untuk migrasi database, dan [uv](https://docs.astral.sh/uv/) untuk dependency management.
+| Tech Stack | Deskripsi |
+|------------|-----------|
+| **FastAPI** | Modern, fast web framework for building APIs |
+| **[SQLModel](https://sqlmodel.tiangolo.com/)** | ORM built on SQLAlchemy & Pydantic |
+| **[Alembic](https://alembic.sqlalchemy.org/)** | Database migration tool |
+| **[uv](https://docs.astral.sh/uv/)** | Fast Python package installer & resolver |
+| **SQLite** | Embedded database — **no installation required**. Gateway hanya menyimpan data token verification sementara, **tidak ada data transaksi permanen** yang disimpan. |
 
 ---
 
-## Konteks Bisnis
-
-
-### License Manager
+---
 
 ## Arsitektur
 
