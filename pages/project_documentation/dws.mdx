@@ -19,6 +19,7 @@ Sistem dipasang conveyor belt. dengan alur scan barcode → Timbang Berat → Hi
 | --- | --- | --- |
 | DWSController | src/dws\_controller.py | Orkestrator utama. Koordinasi semua modul, trigger logic, state transaksi. |
 | CameraDriver | src/service/camera\_services.py | Inisialisasi kamera Orbbec, konfigurasi HW D2C, akuisisi frame. |
+| RGBCameraDriver | src/service/rgb\_camera\_service.py | Kamera USB webcam sekunder (cv2.VideoCapture) untuk foto bukti paket. Non-fatal jika gagal. |
 | MeasuringService | src/service/measurements\_services.py | Pemrosesan frame: segmentasi depth, deteksi objek, kalkulasi dimensi. |
 | CalibrationService | src/service/calibration\_service.py | Kalibrasi multi-point untuk scale factor L/W/H. |
 | MQTTClientService | src/service/mqtt\_client\_services.py | Koneksi ke MQTT broker, publish data, LWT, auto-reconnect. |
@@ -38,6 +39,21 @@ Kamera depth Orbbec dipasang diatas platform timbangan menghadap kebawah. Setiap
 - Menggunakan Hardware D2C (Depth to Color Alignment)
 - Nilai Intrinsik kamera dobaca otomatis dari SDK saat Startup
 - Floor depth dikalibrasi otomatis saat startup -- Bisa di konfigurasi menggunakan API /config
+- **Edge-aware refinement**: piksel di tepi transisi depth (antara objek & lantai) yang depth-nya tidak reliabel dibuang menggunakan Sobel gradient, agar contour tidak melebar dan L/W tidak over-estimate. Dikontrol oleh `edge_gradient_threshold` (mm/px, 0 = nonaktif).
+
+## Kamera RGB Sekunder (Foto Bukti Paket)
+Selain kamera depth Orbbec, sistem dapat menggunakan **kamera USB webcam tambahan** sebagai sumber foto bukti paket yang lebih jelas. Kamera ini hanya melakukan capture (mengikuti trigger transaksi), bukan untuk pengukuran.
+
+- Berjalan di background thread agar frame terbaru selalu siap saat trigger (tanpa lag warmup).
+- **Non-fatal**: jika kamera webcam gagal/ tidak terpasang, sistem tetap jalan dan capture sekunder dilewati.
+- Foto hasil webcam (jika tersedia) yang dikirim sebagai `image_base64` di payload `DATA/RESULT` dan disimpan ke folder `captured_images_rgb/`.
+- Dapat dinonaktifkan via `RGB_CAMERA_ENABLED=False` di `.env`.
+
+:::info{title="Deteksi Index Kamera"}
+
+Index webcam diatur via `RGB_CAMERA_INDEX`. Jika index salah (mis. ter-claim oleh driver lain seperti RGB internal Orbbec), kamera bisa "terbuka" tapi tidak mengirim frame — sistem mendeteksi ini dalam 3 detik dan melewati capture sekunder. Gunakan `tools/list_cameras.py` untuk mengecek index yang benar.
+
+:::
 
 ## Integrasi Timbangan BLE
 Berat paket dibaca dari timbangan digital yang terhubung via Bluetooth Low Energy. Sistem otomatis mendeteksi UUID characteristic BLE yang, sehingga tidak perlu konfigurasi UUID manual.
@@ -52,6 +68,12 @@ Scanner barcode terhubung ke sistem melalui TCP server yang berjalan di port 900
 - Barcode Debounce: barcode yang sama tidak diproses ulang dalam interval waktu tertentu.
 - Barcode Expired: Barcode yang tidak diikuti berat stabil dalam batas waktu tertentu (dapat di konfigurasi) akan dianggap expired dan direset.
 
+## Antrian Barcode (FIFO Queue)
+Ketika beberapa paket di-scan berturut-turut sebelum transaksi sebelumnya selesai, barcode tambahan **tidak dibuang** melainkan dimasukkan ke antrian FIFO (kapasitas maksimal 10). Setelah satu transaksi selesai dan barang diangkat, barcode berikutnya otomatis ditarik dari antrian.
+
+- Dedup: barcode yang sudah aktif atau sudah ada di antrian tidak ditambahkan dua kali.
+- Jika antrian penuh (10), barcode baru di-drop dan sistem mem-publish status `QUEUE_FULL` ke topic `DISPLAY/BARCODE` agar operator tahu.
+
 ## Trigger Logic
 Transaksi pengukuran hanya dieksekusi ketika tiga kondisi terpenuhi dan bertahan selama `stability_delay` detik:
 
@@ -65,18 +87,33 @@ Transaksi pengukuran hanya dieksekusi ketika tiga kondisi terpenuhi dan bertahan
 
 Ini mencegah pengiriman data saat masih bergerak atau belum ada barcode yang di scan.
 
-## Kalibrasi Dimensi
-Sistem menyediakan endpoint kalibrasi multi-point untuk mengoreksi error sistematis pada pengukuran. Operator mengukur beberapa objek referensi yang sudah diketahui ukurannya, sistem menghitung scale factor optimal menggunakan weighted average berdasarkan volume objek.
+:::warning{title="Safety: Tunggu Barang Diangkat"}
 
-:::tip
-
-Gunakan minimal 2 objek referensi untuk hasil kalibrasi terbaik: satu ukuran kecil (~15cm) dan satu ukuran besar (~50cm). Semakin bervariasi ukuran referensi, semakin akurat scale factor yang dihasilkan.
+Setelah satu transaksi selesai, sistem masuk state **menunggu barang diangkat** (`_awaiting_item_removal`). Trigger berikutnya diblokir sampai berat kembali ≤ 0.02 kg (barang fisik diangkat dari timbangan). Ini mencegah satu paket terukur dua kali. Setelah barang diangkat, barcode berikutnya ditarik dari antrian.
 
 :::
 
-- Minimal 1 objek referensi. Direkomendasikan 2: ukuran kecil (~15cm) dan besar (~50cm).
-- Scale factor diterapkan ke config langsung setelah konfirmasi -- tanpa restart.
-- Riwayat sesi kalibrasi disimpan ke calibration.json.
+## Kalibrasi Dimensi
+Sistem mengoreksi error sistematis pengukuran menggunakan **regresi linear per sisi**. Setiap sisi (panjang/pendek/tinggi) dikoreksi dengan rumus `final = slope × raw + intercept` yang difit ke nilai mentah hasil pengukuran. Operator mengukur beberapa objek referensi yang sudah diketahui ukurannya, dan sistem menghitung parameter regresi optimal dari data tersebut.
+
+### Pengambilan Sampel per Objek
+Berbeda dari pengukuran transaksi biasa, kalibrasi mengambil **beberapa sampel manual (N, default 5)** untuk tiap objek referensi. Tiap sampel diambil pada orientasi berbeda (lurus / diagonal kiri / diagonal kanan / dst) dan diperlakukan sebagai satu observasi regresi tersendiri (measured berbeda, actual sama). Ini membuat MAE jujur mencerminkan variasi orientasi dan mencegah fit overfit ke satu posisi.
+
+| Model | Rumus | Catatan |
+| --- | --- | --- |
+| Linear | `final = slope × raw + intercept` | Model yang dipakai produksi (config). |
+
+:::tip
+
+Gunakan **minimal 2 objek referensi** (`MIN_POINTS`). Direkomendasikan **≥4 objek dengan ukuran bervariasi** — satu kecil (~15cm) dan satu besar (~50cm) — agar slope+intercept ter-fit benar dan model Poly-2 untuk tinggi bisa dihitung. Dengan hanya 1 ukuran, regresi degrade ke rasio sederhana (intercept=0).
+
+:::
+
+- Capture (`/calibrate/measure`) hanya berhasil jika ada objek terdeteksi di **tengah frame** dan bacaan live masih segar (tidak lebih lama dari 1.5 detik). Jika tidak, sistem menolak dengan error 400.
+- Sampel maupun data point bisa dihapus untuk diulang tanpa me-restart sesi — gunakan `DELETE /calibrate/measure/{i}` (hapus 1 sampel di buffer berjalan) atau `DELETE /calibrate/point/{i}` (hapus 1 objek referensi).
+- Standardisasi long/short (max/min L,W) konsisten dengan pengukuran — jika input L/W tertukar.
+- Riwayat semua sesi kalibrasi (parameter ketiga model + MAE) disimpan ke `calibration.json`.
+- Setelah model terbaik dipilih (MAE terkecil), terapkan ke produksi via `PUT /config` (`slope_*`/`intercept_*`) — efektif langsung tanpa restart.
 
 ## Live Stream & Developer Mode
 Frame hasil pemrosesan di-stream via MJPEG HTTP di endpoint /stream. Dashboard dapat menampilkan preview kamera secara realtime.
@@ -100,6 +137,26 @@ Perubahan config via API bersifat persisten — nilai tersimpan di `config.json`
 
 :::
 
+## Auto-Restart & Recovery Kamera
+Jika kamera depth berhenti mengirim frame (stuck), sistem tidak langsung mati. Setelah mencapai batas kegagalan frame berturut-turut, pipeline kamera di-restart otomatis tanpa mematikan program.
+
+- Auto-restart dicoba hingga 3 kali. Jika kamera tetap tidak pulih, baru sistem melaporkan error fatal ke MQTT dan exit.
+- Counter restart di-reset setelah kamera benar-benar pulih (frame kembali normal).
+- Restart juga bisa dipicu manual via endpoint `POST /restart` (mis. dari dashboard) tanpa restart program.
+
+## Resiliensi MQTT Offline
+Jika broker MQTT sedang offline saat sebuah transaksi selesai, hasil pengukuran **tidak hilang**. Payload disimpan sebagai *pending result* dan otomatis dikirim ulang (flush) begitu koneksi MQTT pulih kembali.
+
+- Auto-reconnect ke broker dengan retry tiap 5 detik.
+- LWT (Last Will and Testament): jika sistem mati mendadak, broker otomatis mem-publish status `OFFLINE` ke topic `STATUS`.
+
+## Transaction Profiler
+Untuk analisis performa, setiap transaksi dapat di-profil: waktu tiap tahap lifecycle (barcode diterima → berat stabil → trigger → publish MQTT) dicatat ke file CSV (`transaction_logs/transactions.csv`).
+
+- Mencatat durasi tahapan kunci: waktu pergerakan barang, hold delay aktual, durasi proses, durasi publish MQTT, dan total durasi.
+- Diaktifkan via `PROFILE_ENABLED=True` (default aktif).
+- Opsional: rekam video MP4 per transaksi via `PROFILE_VIDEO_ENABLED=True` (lebih berat; output di `transaction_logs/videos/`).
+
 ## Error Reporting via MQTT
 Error fatal dari modul manapun dikirim ke MQTT topic DWS-SICEPAT/STATUS/ERROR sebelum proses exit, sehingga backend dapat mendeteksi dan menampilkan notifikasi ke operator.
 
@@ -112,11 +169,18 @@ Error fatal dari modul manapun dikirim ke MQTT topic DWS-SICEPAT/STATUS/ERROR se
 
 | Topic | Trigger | Isi |
 | --- | --- | --- |
-| DISPLAY/BARCODE | Tiap scan barcode | \{ barcode: str \} |
+| DISPLAY/BARCODE | Tiap scan barcode / barcode di-clear | \{ barcode: str \} (string kosong = cleared) |
+| DISPLAY/BARCODE | Antrian penuh | \{ status: "QUEUE\_FULL", barcode, reason \} |
 | DISPLAY/MEASUREMENT | Tiap frame (~15fps) | \{ weight, length, width, height, volumetric, divisor \} |
 | DATA/RESULT | Saat transaksi selesai | \{ barcode, weight, length, width, height, volumetric, divisor, image\_base64 \} |
 | STATUS | Connect / disconnect | \{ status: "ONLINE" \} atau \{ status: "OFFLINE", reason \} |
 | STATUS/ERROR | Error fatal | \{ status: "ERROR", failed\_module, error\_message \} |
+
+:::note
+
+Topic dipublish dengan prefix `DWS-SICEPAT/` (mis. `DWS-SICEPAT/DATA/RESULT`). `image_base64` pada `DATA/RESULT` diambil dari kamera RGB sekunder jika tersedia. Saat MQTT reconnect, sistem mem-publish `STATUS/ERROR` kosong (retained) untuk membersihkan error lama.
+
+:::
 
 # Setup
 
@@ -146,6 +210,15 @@ copy .env.example .env
 uv run -m main
 ```
 
+## Deployment (Build Executable)
+Untuk deployment di mesin produksi (tanpa Python environment), build executable Windows menggunakan PyInstaller:
+
+```bash title="Terminal"
+uv run pyinstaller dws-middleware.spec --clean
+```
+
+Output: `dist/DWS-SICEPAT.exe`. Packaging installer lebih lanjut menggunakan Inno Setup.
+
 ## File .env
 
 ```bash title=".env"
@@ -172,6 +245,12 @@ COLOR_WIDTH=1280
 COLOR_HEIGHT=960
 FPS=15
 
+# Kamera RGB Sekunder (USB webcam) — capture saja, mengikuti trigger depth camera
+RGB_CAMERA_ENABLED=True
+RGB_CAMERA_INDEX=1     # index cv2.VideoCapture; cek dengan tools/list_cameras.py
+RGB_CAMERA_WIDTH=1280
+RGB_CAMERA_HEIGHT=720
+
 # Nilai Intrinsik kamera
 FX=1254.023193 
 FY=1253.993041
@@ -195,21 +274,38 @@ VOLUMETRIC_DIVISOR=6000.0
 BARCODE_TIMEOUT=15.0 # Berapa lama barcode akan disimpan
 BARCODE_DEBOUNCE=1.0 # Berapa lama sistem menolak data barcode yang sama
 
-# Kalibrasi
-SCALE_L=1.0
-SCALE_W=1.0
-SCALE_H=1.0
+# Kalibrasi regresi linear per sisi: final = slope * raw + intercept
+# l = sisi panjang, w = sisi pendek, h = tinggi
+SLOPE_L=1.0
+INTERCEPT_L=0.0
+SLOPE_W=1.0
+INTERCEPT_W=0.0
+SLOPE_H=1.0
+INTERCEPT_H=0.0
 
 DEV_MODE=False
+
+# Transaction profiler — catat timing per transaksi ke CSV (+ video opsional)
+PROFILE_ENABLED=True
+PROFILE_VIDEO_ENABLED=False
 ```
+
+:::note
+
+`edge_gradient_threshold` (default 30.0 mm/px) tidak ada di `.env` — nilainya hanya ada di config runtime (`config.json`) dan dapat diubah via `PUT /config`. Set ke `0` untuk menonaktifkan edge-aware refinement.
+
+:::
 
 ## File yang Auto-Generated
 
 | File | Dibuat Saat | Isi |
 | --- | --- | --- |
 | config.json | Pertama kali config diubah via API | Override config runtime. Merge dengan .env saat startup. |
-| calibration.json | Sesi kalibrasi pertama dikonfirmasi | Riwayat semua sesi kalibrasi beserta scale factor. |
-| captured\_images/ | Tiap transaksi selesai | Foto paket dalam format JPG dengan timestamp dan barcode sebagai nama file. |
+| calibration.json | Sesi kalibrasi pertama dikonfirmasi | Riwayat semua sesi kalibrasi beserta parameter ketiga model + MAE. |
+| captured\_images/ | Tiap transaksi selesai | Foto paket (dari kamera depth) format JPG dengan timestamp dan barcode sebagai nama file. |
+| captured\_images\_rgb/ | Tiap transaksi selesai (jika webcam aktif) | Foto paket dari kamera RGB sekunder. Sumber `image_base64` di payload DATA/RESULT. |
+| transaction\_logs/transactions.csv | Tiap transaksi selesai (jika `PROFILE_ENABLED`) | Log timing tiap tahap transaksi untuk analisis performa. |
+| transaction\_logs/videos/ | Tiap transaksi (jika `PROFILE_VIDEO_ENABLED`) | Rekaman video MP4 per transaksi. |
 
 
 ## Endpoints Utama
@@ -223,15 +319,17 @@ API berjalan di [http://localhost:8000](http://localhost:8000). Dokumentasi inte
 | Method | Endpoint | Fungsi |
 | --- | --- | --- |
 | GET | /stream | Live stream kamera (MJPEG) |
+| POST | /restart | Restart pipeline kamera depth tanpa shutdown program |
 | GET | /config | Ambil semua nilai konfigurasi saat ini |
 | PUT | /config | Update satu atau lebih nilai konfigurasi |
-| POST | /calibrate/start | Mulai sesi kalibrasi baru |
-| POST | /calibrate/measure | Ukur objek di frame (blocking ~3 detik) |
-| POST | /calibrate/point | Simpan data point kalibrasi |
+| POST | /calibrate/start | Mulai sesi kalibrasi baru. Query `sample_count=N` (default 5) |
+| POST | /calibrate/measure | Snapshot 1 bacaan mentah → buffer sampel point berjalan |
+| DELETE | /calibrate/measure/\{i\} | Hapus sampel ke-`i` di buffer point berjalan |
+| POST | /calibrate/point | Finalize point: N sampel + ukuran asli objek |
 | DELETE | /calibrate/point/\{i\} | Hapus data point berdasarkan index |
-| GET | /calibrate/status | Preview scale dari data point yang terkumpul |
-| POST | /calibrate/confirm | Konfirmasi kalibrasi — apply scale ke config |
-| POST | /calibrate/cancel | Batalkan sesi kalibrasi |
+| GET | /calibrate/status | Progress capture + data points + preview regresi |
+| POST | /calibrate/confirm | Fit 3 model kandidat, simpan parameter + MAE ke history |
+| POST | /calibrate/cancel | Batalkan sesi kalibrasi tanpa menyimpan |
 | GET | /calibrate/history | Riwayat sesi kalibrasi sebelumnya |
 
 ## Parameter Konfigurasi
@@ -247,9 +345,13 @@ API berjalan di [http://localhost:8000](http://localhost:8000). Dokumentasi inte
 | barcode\_timeout | 15.0 | Barcode dianggap expired setelah N detik tanpa trigger (detik). |
 | barcode\_debounce | 1.0 | Jeda minimum antara dua scan barcode yang sama (detik). |
 | max\_match\_dist | 50.0 | Jarak maksimum centroid antar frame untuk tracking objek (pixel). |
-| scale\_l | 1.0 | Scale factor panjang (L) dari kalibrasi. |
-| scale\_w | 1.0 | Scale factor lebar (W) dari kalibrasi. |
-| scale\_h | 1.0 | Scale factor tinggi (H) dari kalibrasi. |
+| slope\_l | 1.0 | Slope regresi sisi panjang (L). `final = slope_l × raw + intercept_l`. |
+| intercept\_l | 0.0 | Intercept regresi sisi panjang (L) dalam cm. |
+| slope\_w | 1.0 | Slope regresi sisi pendek (W). |
+| intercept\_w | 0.0 | Intercept regresi sisi pendek (W) dalam cm. |
+| slope\_h | 1.0 | Slope regresi tinggi (H). |
+| intercept\_h | 0.0 | Intercept regresi tinggi (H) dalam cm. |
+| edge\_gradient\_threshold | 30.0 | Threshold Sobel (mm/px) untuk membuang piksel tepi depth yang tidak reliabel. `0` = nonaktif. Hanya di config runtime, bukan di `.env`. |
 
 ## Tech Stack
 
@@ -267,3 +369,4 @@ API berjalan di [http://localhost:8000](http://localhost:8000). Dokumentasi inte
 | Config | pydantic-settings | latest | Settings management dari .env |
 | Logging | loguru | latest | Structured logging |
 | API Docs | scalar-fastapi | latest | Interactive API documentation UI |
+| Deployment | PyInstaller + Inno Setup | latest | Build executable Windows (`dist/DWS-SICEPAT.exe`) |
