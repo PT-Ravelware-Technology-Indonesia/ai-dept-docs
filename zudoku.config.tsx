@@ -377,6 +377,12 @@ const config: ZudokuConfig = {
       },
       {
         "type": "doc",
+        "file": "project_documentation/document_generator",
+        "label": "Document Generator",
+        "icon": "bot"
+      },
+      {
+        "type": "doc",
         "file": "project_documentation/INS_image_compression",
         "label": "INS Image Compression",
         "icon": "file-archive"

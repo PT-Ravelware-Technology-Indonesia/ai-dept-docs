@@ -1,0 +1,263 @@
+---
+title: Document Generator
+---
+
+|               |                                                                                                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Link Repo** | <Link to="https://github.com/PT-Ravelware-Technology-Indonesia/business-transformation-document-generator-api">business-transformation-document-generator-api</Link> |
+| **Author**    | Tim AI Ravelware                                                                                                                                |
+| **Kategori**  | Multi-Agent Orchestration & Document Generation Backend                                                                                         |
+
+## Project Overview
+
+**Document Generator** (`document-generator`) merupakan backend API berbasis **FastAPI** dan framework multi-agent **Agno** yang bertugas sebagai mesin orkestrasi kecerdasan buatan untuk ekosistem Business Transformation. Sistem ini menyediakan orkestrasi agent AI, streaming chat real-time (SSE), manipulasi dokumen (.docx), pembuatan slide presentasi interaktif secara dinamis, basis pengetahuan (RAG via pgvector), serta integrasi domain expert untuk penyusunan Bill of Quantities (BOQ).
+
+Sistem ini berjalan sebagai bagian dari arsitektur multi-repository:
+
+| Repository | Tech Stack | Peran & Tanggung Jawab |
+|---|---|---|
+| **document-generator** *(backend ini)* | Python 3.11+, FastAPI, Agno, SQLModel, PostgreSQL + pgvector, Redis, MinIO | Orkestrasi agent AI, dokumen generation, slide generation, RAG, observabilitas Langfuse. |
+| **business-transformation-api** | Bun, Elysia, Drizzle, PostgreSQL | Data bisnis utama, master data user, session autentikasi, dan KPI/OKR *(dikelola tim lain)*. |
+| **business-transformation-webserver** | React 19, Vite, TanStack Router | Frontend dashboard manajemen dan antarmuka chat AI assistant. |
+| **open-slide** | React, Vite | Framework presentasi interaktif tempat agent `slide` menulis deck presentasi. |
+
+---
+
+## Konteks Bisnis
+
+Dalam proses transformasi bisnis industri, kebutuhan pembuatan dokumen formal (seperti Minutes of Meeting / MoM, Terms of Reference, Dokumen Kebutuhan Bisnis, dan Bill of Quantities / BOQ) memakan waktu berhari-hari karena melibatkan koordinasi lintas departemen (software architect, hardware engineer, AI engineer, mechanical engineer, dan project manager).
+
+Document Generator dibangun untuk:
+1. **Mempercepat Pembuatan Dokumen Bisnis**: Mengubah catatan rapat atau requirement mentah menjadi draf dokumen formal terstruktur dalam hitungan menit.
+2. **Multi-Agent BOQ Drafting**: Melibatkan agen spesialis per domain untuk memilih spesifikasi perangkat keras (edge compute, sensor, enclosure, software license) dan mengestimasi harga berdasarkan data historis serta pencarian pasar langsung.
+3. **Automasi Pembuatan Slide Presentasi**: Menghasilkan presentasi interaktif siap tayang di browser lengkap dengan visualisasi diagram terstruktur.
+4. **Human-in-the-Loop Quality Control**: Memastikan standar kualitas melalui fitur automated document review dan antrian anotasi di Langfuse sebelum dokumen diserahkan ke klien.
+
+---
+
+## Gambaran Arsitektur
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `flowchart TD
+    User([Pengguna / Browser]) -->|HTTP & SSE| FE["Frontend Dashboard<br/>(React 19 + Vite :5173)"]
+    FE -->|Auth & Data Bisnis| BT_API["Business Transformation API<br/>(Bun + Elysia :3000)"]
+    FE -->|API & Streaming Chat| BE["Backend Document Generator<br/>(FastAPI :8000)"]
+
+    BE -->|Verifikasi Token / Sesi| BT_DB[("BT PostgreSQL Database")]
+    BE -->|State, Histori & Rate Limit| RD[("Redis Cache<br/>:6379")]
+    BE -->|Metadata, Review & BOQ| PG[("PostgreSQL + pgvector<br/>:5432")]
+    BE -->|Simpan Dokumen & File| MIO[("MinIO S3 Storage<br/>:9000")]
+    BE -->|LLM Inference| OR["OpenRouter Gateway"]
+    OR --> LLM["DeepSeek / Claude / GPT"]
+
+    BE -.->|Tracing & Prompts| LF["Langfuse Observability<br/>:3000"]
+    BE -->|Per-user Git Worktree| OS["Open-Slide Framework<br/>(React Deck Preview)"]
+`
+    }
+/>
+
+---
+
+## Alur Data & Streaming Chat
+
+Komunikasi chat antara pengguna dan agen AI menggunakan protokol **Server-Sent Events (SSE)** dengan ketahanan terhadap diskoneksi jaringan melalui `StreamManager`.
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `sequenceDiagram
+    participant U as Pengguna (Browser)
+    participant F as Frontend (Webserver)
+    participant API as FastAPI Router
+    participant Auth as Auth Dependency
+    participant SM as Stream Manager
+    participant AG as Agno Agent / Team
+    participant LLM as OpenRouter
+
+    U->>F: Kirim pesan chat
+    F->>API: POST /sessions/{id}/chat (SSE) + Bearer Token
+    API->>Auth: Validasi Bearer Token ke BT API / Postgres
+    Auth-->>API: User terverifikasi (Local User mirrored)
+    API->>SM: Daftarkan background task stream
+    SM->>AG: Eksekusi stream_text()
+    AG->>LLM: Request Chat Completion
+    LLM-->>AG: Stream Token / Tool Call
+    AG-->>SM: Chunk teks / Event status
+    SM-->>API: SSE Data Events
+    API-->>F: Stream ke UI secara live
+    F-->>U: Render teks & kartu interaktif
+
+    Note over SM,AG: Jika client disconnect, background task tetap berjalan hingga selesai
+    SM->>API: Event "done"
+`
+    }
+/>
+
+:::info{title="Background Stream Resilience"}
+Jika tab browser tertutup atau koneksi klien terputus di tengah proses generasi jawaban panjang, `StreamManager` tetap melanjutkan proses inferensi di background hingga pesan asisten tersimpan ke database. Pengguna dapat me-refresh halaman tanpa kehilangan output generasi atau mengirim `POST /sessions/{id}/chat/stop` jika ingin membatalkan secara eksplisit.
+:::
+
+---
+
+## Komponen & Daftar Agen Utama
+
+Agen-agen AI didefinisikan menggunakan format deklaratif YAML di direktori `agents/` dan didukung oleh instruksi kontekstual di `skills/`:
+
+| Nama Agen | File Konfigurasi | Fokus & Tanggung Jawab | Tools Utama |
+|---|---|---|---|
+| **default** | `agents/default.yaml` | Team leader & koordinator alur pra-inisiatif (MoM → ringkasan kebutuhan bisnis → delegasi tugas). | Routing Team, Questionnaire, Plan tools, Knowledge search. |
+| **build** | `agents/build.yaml` | Spesialis pembuatan, penyuntingan blok, dan pemformatan dokumen `.docx`. | SuperDoc SDK, python-docx, table editor, batch styling, review scorer. |
+| **slide** | `agents/slide.yaml` | Penulis deck presentasi interaktif berbasis React di repositori `open-slide`. | CodingTools (file read/write), stock photo tools (Unsplash/Pexels), diagram design skill. |
+| **ai_expert** | `agents/ai_expert.yaml` | Spesialis arsitektur AI & Computer Vision untuk penyusunan Bill of Quantities (BOQ). | `search_past_boq`, `unified_web_search`, document reader. |
+| **canva** | `agents/canva.yaml` | Agen desain dinamis berbasis Canva MCP menggunakan integrasi OAuth pengguna. | Canva MCP server, user OAuth tokens. |
+
+---
+
+## Fitur Utama
+
+### 1. Document Manipulation Engine
+Backend menyediakan engine dokumen berbasis **SuperDoc** dan manipulasi langsung file `.docx` dengan fitur tingkat enterprise:
+- **Block-level & Paragraph Editing**: Membaca struktur dokumen sebagai markdown, memperbarui paragraf atau heading tertentu secara granular tanpa merusak styling template.
+- **Table Operations**:
+  - `expand_table`: Menambah baris tabel secara dinamis dengan menjaga format border dan cell style dari baris template.
+  - `batch_set_cells`: Memperbarui banyak cell sekaligus dalam 1 panggilan fungsi untuk menghemat kuota tool call.
+  - `add_blank_lines`: Menambahkan baris kosong terformat secara presisi.
+- **Automated Document Review**: Evaluasi kepatuhan draf dokumen terhadap standar formal (kelengkapan bab, kejelasan teknis, metrik keberhasilan) dengan skor numerik dan rekomendasi perbaikan.
+- **Soft Delete & Restore**: Menghapus dokumen secara aman (`deleted_at`) dengan opsi pemulihan kembali.
+- **Document Versioning**: Riwayat versi otomatis di MinIO yang dapat di-download atau di-revert kapan saja.
+
+### 2. Interactive Presentation Deck Engine (Open-Slide)
+Agen `slide` mampu menyusun bahan presentasi interaktif berbasis kode React langsung ke dalam repositori `open-slide`:
+- **Per-User Git Worktrees**: Setiap pengguna memiliki folder git worktree mandiri di bawah `SLIDE_WORKTREES_DIR` untuk mencegah konflik saat beberapa pengguna membuat slide bersamaan.
+- **Isolated Vite Preview Server**: Setiap worktree menjalankan server preview Vite pada port dinamis yang dialokasikan khusus per pengguna.
+- **Marker Preview Interaktif**: Agen mengeluarkan penanda `<<<slide:<id>>>` yang diubah oleh frontend menjadi kartu pratinjau live iframe.
+- **Visual Diagram Design Skill**: Mengintegrasikan lebih dari 20 template diagram modular (arsitektur, flowchart, timeline, radar, medallion, swimlane).
+- **Stock Photo Integration**: Pencarian dan penyisipan foto resolusi tinggi berlisensi bebas dari Unsplash/Pexels secara otomatis.
+
+### 3. Multi-Agent BOQ Drafting
+Untuk mempercepat penyusunan estimasi anggaran proyek industrial AI & IoT:
+- Spesialis domain (`ai_expert`, `hardware_expert`, `software_expert`, dsb.) mengidentifikasi kebutuhan spesifikasi komponen teknis.
+- **Lookup BOQ Historis**: Tool `search_past_boq` mencari database item penawaran proyek sebelumnya di PostgreSQL untuk menjaga konsistensi harga acuan internal.
+- **Live Market Web Search**: Tool `unified_web_search` mencari harga pasar terkini, datasheet, dan ketersediaan distributor jika komponen belum ada di riwayat internal.
+- Output terstandarisasi dalam format tabel Markdown lengkap dengan nomor item, spesifikasi rinci, brand/model, kuantitas, harga satuan IDR, dan catatan referensi.
+
+### 4. Knowledge Base & Hybrid RAG
+- Menggunakan ekstensi **pgvector** di PostgreSQL.
+- Sumber dokumen perusahaan (SOP, template, panduan teknis) di-ingest saat startup aplikasi.
+- Hybrid vector & keyword search untuk memberikan konteks akurat kepada seluruh agent.
+
+### 5. Observability & Prompt Management (Langfuse)
+- **Tracing Komprehensif**: Setiap interaksi chat, pemanggilan tool, dan respons LLM dicatat dengan token usage yang akurat.
+- **Dynamic Prompt Sync**: Prompt instruksi agent diprioritaskan dari Langfuse Prompt Management dengan fallback otomatis ke file YAML lokal.
+- **Human-in-the-Loop Annotations**: Draf dokumen dan BOQ dapat diarahkan ke annotation queue Langfuse untuk direview oleh senior engineer.
+
+---
+
+## Model Data & Penyimpanan
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `erDiagram
+    User ||--o{ Initiative : owns
+    User ||--o{ Session : conducts
+    User ||--o{ Document : creates
+    Initiative ||--o{ Session : groups
+    Initiative ||--o{ Document : contains
+    Session ||--o{ Message : contains
+    Session ||--o{ Artifact : stores
+    Session ||--o{ Document : references
+    Document ||--o{ DocumentVersion : versions
+    Document ||--o{ DocumentReview : evaluations
+    DocumentTemplate ||--o{ Document : scaffolds
+
+    PastBOQItem {
+        string id PK
+        string project_name
+        string domain
+        string category
+        string item_name
+        string brand_model
+        float quantity
+        float unit_price
+        string currency
+    }
+`
+    }
+/>
+
+- **ID Convention**: Menggunakan representasi string **BSON ObjectId** (`generate_id()`) alih-alih UUID konvensional, menghasilkan identifier yang unik, ringkas, dan kompatibel dengan sorting waktu.
+- **Penyimpanan Berkas**: File biner `.docx`, hasil review, dan artifact disimpan di MinIO (S3 bucket) menggunakan S3 Key berformat `documents/{user_id}/{doc_id}/v{version}.docx`.
+
+---
+
+## Autentikasi & Otorisasi
+
+Document Generator menggunakan model autentikasi hybrid dengan **Business Transformation (BT) API**:
+1. Frontend mengirimkan header `Authorization: Bearer <token>`.
+2. Dependency `get_current_user` memverifikasi token ke endpoint `/users/verify` pada BT API atau tabel `sessions` di database BT.
+3. Profil user di-cache di Redis (`bt_user:<user_id>`, TTL 300 detik) untuk efisiensi latensi.
+4. Data user di-mirror ke tabel lokal `users` pada PostgreSQL Document Generator.
+5. Role pengguna dipetakan berdasarkan variabel lingkungan `BT_ADMIN_ROLES` (`admin` atau `user`).
+
+---
+
+## Ringkasan API Surface
+
+| Endpoint Path | Method | Fungsi & Catatan |
+|---|---|---|
+| `/health` | `GET` | Health check mendalam (verifikasi konektivitas DB, Redis, dan MinIO S3). Mengembalikan 503 jika dependensi gagal. |
+| `/scalar` | `GET` | Antarmuka dokumentasi OpenAPI interaktif menggunakan Scalar. |
+| `/auth/me` | `GET` | Mendapatkan data profil pengguna yang sedang login dari token BT. |
+| `/sessions/{id}/chat` | `POST` | Endpoint utama chat streaming (SSE) dengan agent AI. |
+| `/sessions/{id}/chat/stop` | `POST` | Menghentikan generasi stream yang sedang berjalan. |
+| `/users/{id}/documents` | `POST` | Unggah dokumen baru atau buat dokumen kosong berformat `.docx`. |
+| `/documents/{id}` | `GET, PATCH, DELETE` | CRUD dokumen, termasuk dukungan soft delete dan restore (`/documents/{id}/restore`). |
+| `/documents/{id}/versions` | `GET` | Melihat riwayat versi dokumen dan melakukan revert ke versi terdahulu. |
+| `/documents/{id}/reviews` | `GET` | Mendapatkan hasil evaluasi skor kualitas dokumen terhadap standar. |
+| `/templates` | `GET, POST` | Manajemen template dokumen `.docx`. |
+| `/slides/base` | `GET` | Mendapatkan URL base server preview presentasi open-slide pengguna saat ini. |
+| `/knowledge/upload` | `POST` | Menambahkan dokumen acuan ke dalam pgvector knowledge base. |
+
+---
+
+## Panduan Menjalankan Sistem
+
+### Prerequisites
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/) package manager
+- Docker & Docker Compose
+- API Key OpenRouter (`API_KEY`)
+- Akses ke database/API Business Transformation (`BT_DATABASE_URL` / `BT_API_BASE_URL`)
+
+### Menjalankan di Lokal (Development)
+
+```bash
+# 1. Install dependencies
+uv sync
+
+# 2. Setup konfigurasi environment
+cp .env.example .env
+# Lengkapi nilai API_KEY, DB credentials, REDIS_URL, dsb.
+
+# 3. Jalankan infrastruktur pendukung
+docker compose -f docker-compose.dev.yml up -d
+
+# 4. Jalankan migrasi database
+uv run alembic upgrade head
+
+# 5. Jalankan backend server
+make dev
+```
+
+- **Backend API**: `http://localhost:8000`
+- **Scalar API Docs**: `http://localhost:8000/scalar`
+- **Health Check**: `http://localhost:8000/health`
+
+### Menjalankan Test Suite
+
+```bash
+PYTHONPATH=. uv run pytest app/tests/ -v
+```
