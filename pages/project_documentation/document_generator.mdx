@@ -6,31 +6,30 @@ title: Document Generator
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Link Repo** | <Link to="https://github.com/PT-Ravelware-Technology-Indonesia/business-transformation-document-generator-api">business-transformation-document-generator-api</Link> |
 | **Author**    | Tim AI Ravelware                                                                                                                                |
-| **Kategori**  | Multi-Agent Orchestration & Document Generation Backend                                                                                         |
-
 ## Project Overview
 
-**Document Generator** (`document-generator`) merupakan backend API berbasis **FastAPI** dan framework multi-agent **Agno** yang bertugas sebagai mesin orkestrasi kecerdasan buatan untuk ekosistem Business Transformation. Sistem ini menyediakan orkestrasi agent AI, streaming chat real-time (SSE), manipulasi dokumen (.docx), pembuatan slide presentasi interaktif secara dinamis, basis pengetahuan (RAG via pgvector), serta integrasi domain expert untuk penyusunan Bill of Quantities (BOQ).
+**Document Generator** (`document-generator`) merupakan backend API berbasis **FastAPI** dan framework multi-agent **Agno** yang bertugas sebagai mesin orkestrasi AI untuk aplikasi Business Transformation, page Document Generator. 
+Tujuan utama dari sistem ini adalah sebagai copilot/drafter pembuatan dokumen dokumen secara general, namun dimulai dari dokumen bisnis (MoM, UR, Proposal, dll). Sistem ini menyediakan orkestrasi agent AI, streaming chat real-time (SSE), manipulasi dokumen (.docx), pembuatan slide presentasi interaktif secara dinamis, knowledge base (RAG via pgvector), serta integrasi domain expert untuk penyusunan Bill of Quantities (BOQ).
 
-Sistem ini berjalan sebagai bagian dari arsitektur multi-repository:
+Sistem ini berjalan sebagai micro service dari bagian arsitektur multi-repository:
 
 | Repository | Tech Stack | Peran & Tanggung Jawab |
 |---|---|---|
-| **document-generator** *(backend ini)* | Python 3.11+, FastAPI, Agno, SQLModel, PostgreSQL + pgvector, Redis, MinIO | Orkestrasi agent AI, dokumen generation, slide generation, RAG, observabilitas Langfuse. |
-| **business-transformation-api** | Bun, Elysia, Drizzle, PostgreSQL | Data bisnis utama, master data user, session autentikasi, dan KPI/OKR *(dikelola tim lain)*. |
-| **business-transformation-webserver** | React 19, Vite, TanStack Router | Frontend dashboard manajemen dan antarmuka chat AI assistant. |
+| **document-generator** *(backend ini)* | Python 3.11+, FastAPI, Agno, SuperDoc, OpenSlide, SQLModel, PostgreSQL + pgvector, Redis, MinIO, Langfuse | Orkestrasi agent AI, dokumen generation and editing, slide generation, RAG, observability. |
+| **business-transformation-api** | Bun, Elysia, Drizzle, PostgreSQL | Data bisnis utama, master data user, session autentikasi. |
+| **business-transformation-webserver** | React 19, Vite, TanStack Router | Frontend dashboard manajemen dan UI chat AI assistant. |
 | **open-slide** | React, Vite | Framework presentasi interaktif tempat agent `slide` menulis deck presentasi. |
 
 ---
 
 ## Konteks Bisnis
 
-Dalam proses transformasi bisnis industri, kebutuhan pembuatan dokumen formal (seperti Minutes of Meeting / MoM, Terms of Reference, Dokumen Kebutuhan Bisnis, dan Bill of Quantities / BOQ) memakan waktu berhari-hari karena melibatkan koordinasi lintas departemen (software architect, hardware engineer, AI engineer, mechanical engineer, dan project manager).
+Tujuan utama dalam bisnis adalah mempercepat proses administratif dan sebagai copilot untuk ideation.
 
 Document Generator dibangun untuk:
 1. **Mempercepat Pembuatan Dokumen Bisnis**: Mengubah catatan rapat atau requirement mentah menjadi draf dokumen formal terstruktur dalam hitungan menit.
-2. **Multi-Agent BOQ Drafting**: Melibatkan agen spesialis per domain untuk memilih spesifikasi perangkat keras (edge compute, sensor, enclosure, software license) dan mengestimasi harga berdasarkan data historis serta pencarian pasar langsung.
-3. **Automasi Pembuatan Slide Presentasi**: Menghasilkan presentasi interaktif siap tayang di browser lengkap dengan visualisasi diagram terstruktur.
+2. **Multi-Agent BOQ Drafting**: Melibatkan agen spesialis per domain (AI, Software, Hardware, Mechanical, Operational) dan mengestimasi harga berdasarkan data historis serta pencarian langsung.
+3. **Automasi Pembuatan Slide Presentasi**: Menghasilkan presentasi interaktif dan anti-slop di browser lengkap dengan visualisasi dan diagram terstruktur.
 4. **Human-in-the-Loop Quality Control**: Memastikan standar kualitas melalui fitur automated document review dan antrian anotasi di Langfuse sebelum dokumen diserahkan ke klien.
 
 ---
@@ -62,7 +61,7 @@ Document Generator dibangun untuk:
 
 ## Alur Data & Streaming Chat
 
-Komunikasi chat antara pengguna dan agen AI menggunakan protokol **Server-Sent Events (SSE)** dengan ketahanan terhadap diskoneksi jaringan melalui `StreamManager`.
+Komunikasi chat antara pengguna dan agen AI menggunakan protokol **Server-Sent Events (SSE)**.
 
 <Mermaid
     config={{look: "handDrawn"}}
@@ -96,14 +95,15 @@ Komunikasi chat antara pengguna dan agen AI menggunakan protokol **Server-Sent E
 />
 
 :::info{title="Background Stream Resilience"}
-Jika tab browser tertutup atau koneksi klien terputus di tengah proses generasi jawaban panjang, `StreamManager` tetap melanjutkan proses inferensi di background hingga pesan asisten tersimpan ke database. Pengguna dapat me-refresh halaman tanpa kehilangan output generasi atau mengirim `POST /sessions/{id}/chat/stop` jika ingin membatalkan secara eksplisit.
+Jika tab browser tertutup atau koneksi klien terputus di tengah proses generation jawaban , `StreamManager` tetap melanjutkan proses inference di background hingga pesan asisten tersimpan ke database. 
+User dapat me-refresh halaman tanpa kehilangan output generasi atau mengirim `POST /sessions/{id}/chat/stop` jika ingin membatalkan secara eksplisit. Selain itu terdapat tombol stop juga yang berfungsi untuk menstop generation.
 :::
 
 ---
 
 ## Komponen & Daftar Agen Utama
-
-Agen-agen AI didefinisikan menggunakan format deklaratif YAML di direktori `agents/` dan didukung oleh instruksi kontekstual di `skills/`:
+Aplikasi ini menggunakan pendekatan multi-agent atau <Link to="https://docs.agno.com/teams/overview">Team</Link> 
+Daftar agent, Agent dideskripsikan melalui file YAML di direktori `agents/` dan bsia menggunakan tools dan skills di `skills/`:
 
 | Nama Agen | File Konfigurasi | Fokus & Tanggung Jawab | Tools Utama |
 |---|---|---|---|
