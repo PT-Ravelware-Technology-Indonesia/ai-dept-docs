@@ -405,6 +405,12 @@ const config: ZudokuConfig = {
         "label": "Gateway Musashi",
         "icon": "server"
       },
+      {
+        "type": "doc",
+        "file": "project_documentation/edge_ppe_monitoring",
+        "label": "Edge PPE Monitoring",
+        "icon": "hard-hat"
+      },
     ],
     },
     ],

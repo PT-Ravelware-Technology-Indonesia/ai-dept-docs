@@ -1,0 +1,197 @@
+---
+title: Edge PPE Monitoring
+---
+
+import { Mermaid } from "zudoku/mermaid";
+
+|               |                                                                                                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Link Repo** | <Link to="https://github.com/PT-Ravelware-Technology-Indonesia/edge-ppe-monitoring">https://github.com/PT-Ravelware-Technology-Indonesia/edge-ppe-monitoring</Link> |
+| **Author**    | Mochamad Arya El Rumy                                                                                                                           |
+| **Kategori**  | Edge AI Computer Vision & PPE Safety Monitoring                                                                                                 |
+
+## Project Overview
+
+**Edge PPE Monitoring** (`edge-ppe-monitoring`) merupakan sistem pengawasan kepatuhan Alat Pelindung Diri (APD / *Personal Protective Equipment*) berbasis computer vision yang dideploy secara *on-premises* pada perangkat edge (mini PC). Sistem ini mendukung integrasi hingga 4 IP Camera melalui RTSP stream, live streaming berlatensi rendah via WebRTC dan HLS, inferensi AI terjadwal dengan model YOLO, notifikasi real-time via WebSocket, dan pencatatan log deteksi visual dengan frame beranotasi.
+
+Seluruh sistem dirancang *self-contained* menggunakan Docker Compose tanpa ketergantungan cloud, menjaga seluruh data video dan analitik tetap berada di dalam jaringan lokal (LAN).
+
+---
+
+## Konteks Bisnis
+
+Di industri manufaktur, pergudangan, dan konstruksi, kepatuhan penggunaan APD (helm keselamatan, rompi, sepatu safety, masker) adalah syarat mutlak Keselamatan dan Kesehatan Kerja (K3). Pengawasan manual seringkali tidak efektif karena area kerja yang luas dan keterbatasan personel K3.
+
+Edge PPE Monitoring hadir untuk:
+1. **Otomatisasi Pengawasan K3**: Mendeteksi pelanggaran atau kepatuhan APD secara real-time dan terjadwal.
+2. **Privasi & Keamanan Data (Zero Cloud)**: Seluruh pemrosesan stream video, inferensi AI, dan penyimpanan riwayat dilakukan lokal di edge device, menjaga privasi data pabrik.
+3. **Efisiensi Perangkat Keras**: Dioptimalkan untuk berjalan pada mini PC kelas menengah (misalnya Intel NUC, i3+, RAM 8GB) menggunakan inferensi CPU (PyTorch CPU / OpenVINO) tanpa memerlukan GPU workstation yang mahal.
+4. **Fleksibilitas Operasional**: Jadwal inferensi dapat dikustomisasi per kamera menggunakan ekspresi cron (misalnya hanya aktif pada jam kerja tertentu).
+
+---
+
+## Gambaran Arsitektur
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `flowchart TD
+    subgraph Video_Source["Video Sources"]
+        CAM1["IP Camera 1 (RTSP)"]
+        CAM2["IP Camera 2 (RTSP)"]
+        DEMO["Demo Video Loop"]
+    end
+
+    subgraph Media_Layer["Media Streaming Layer"]
+        MTX["MediaMTX Server<br/>(:8554 RTSP, :8889 HLS, :8888 WebRTC)"]
+    end
+
+    subgraph Backend_App["Edge Compute (Backend & AI)"]
+        API["FastAPI Application<br/>(:8000)"]
+        BEAT["Celery Beat<br/>(Task Scheduler)"]
+        REDIS[("Redis Broker<br/>:6379")]
+        WORKER["Celery Worker<br/>(YOLO Inference & Capture)"]
+        PG[("PostgreSQL Database<br/>:5432")]
+        FS["Local Storage<br/>(/images & /videos)"]
+    end
+
+    subgraph Client_App["Frontend Dashboard"]
+        UI["React 19 SPA<br/>(Tailwind v4 + shadcn/ui)"]
+    end
+
+    CAM1 --> MTX
+    CAM2 --> MTX
+    DEMO --> MTX
+
+    MTX -->|"WebRTC / HLS Stream"| UI
+    MTX -.->|"RTSP Frame Grab"| WORKER
+
+    BEAT -->|"Enqueue Inference Tasks"| REDIS
+    REDIS --> WORKER
+
+    WORKER -->|"Inference (YOLOv11/v8)"| WORKER
+    WORKER -->|"Save Annotated JPG"| FS
+    WORKER -->|"Save Detection Log"| PG
+    WORKER -->|"Push Alert Event"| REDIS
+
+    REDIS --> API
+    API -->|"WebSocket (:8000/ws)"| UI
+    UI -->|"REST API (:8000/api)"| API
+    FS -.->|"Serve Image Static"| API`
+    }
+/>
+
+---
+
+## Alur Deteksi & Notifikasi
+
+Inferensi AI dipicu secara berkala oleh Celery Beat sesuai konfigurasi cron schedule per kamera:
+
+<Mermaid
+    config={{look: "handDrawn"}}
+    chart={
+        `sequenceDiagram
+    participant B as Celery Beat
+    participant R as Redis
+    participant W as Celery Worker
+    participant M as MediaMTX / RTSP
+    participant Y as YOLO Engine
+    participant DB as PostgreSQL
+    participant FS as Local Storage
+    participant API as FastAPI (WS Server)
+    participant UI as Browser (React UI)
+
+    B->>R: Trigger task inferensi per kamera
+    R->>W: Dispatch task ke worker
+    W->>W: Validasi schedule & window aktif
+    W->>M: Grab frame terbaru via OpenCV
+    W->>Y: Eksekusi model YOLO (filter classes & conf)
+    alt Ditemukan Pelanggaran / Objek
+        W->>W: Draw bounding box & confidence label
+        W->>FS: Simpan gambar asli & gambar teranotasi
+        W->>DB: Catat riwayat ke tabel detections & inferenceresult
+        W->>API: Broadcast payload deteksi
+        API->>UI: Push alert via WebSocket (/ws/{camera_id})
+        UI->>UI: Render notifikasi alert & update tabel log
+    end`
+    }
+/>
+
+---
+
+## Komponen Utama
+
+| Komponen | Lokasi File | Tanggung Jawab |
+| --- | --- | --- |
+| **FastAPI Core & Router** | `app/main.py`, `app/router/` | Endpoint REST API (CRUD kamera, riwayat deteksi, model AI, demo stream) dan WebSocket gateway. |
+| **Camera Service** | `app/services/camera_service.py` | Validasi RTSP, konfigurasi IP lokal, integrasi path ke MediaMTX API. |
+| **MediaMTX Service** | `app/services/mediamtx_service.py` | Manajemen dinamis path streaming RTSP/WebRTC/HLS pada server MediaMTX secara runtime tanpa restart. |
+| **Frame Capture Service** | `app/services/frame_capture_service.py` | Akuisisi frame dari RTSP stream dengan fallback retry logic saat koneksi drop. |
+| **YOLO Service** | `app/services/yolo_service.py` | Wrapper Ultralytics YOLO dengan in-memory model caching, NMS tuning (conf & IoU), dan class filtering. |
+| **Inference Task & Beat** | `app/tasks/inference_task.py`, `app/celery_app.py` | Eksekusi background task terjadwal untuk frame capture, inferensi AI, dan penyimpanan data. |
+| **Inference Scheduler** | `app/services/inference_scheduler_service.py` | Evaluasi ekspresi cron dan validasi zona waktu aktif per kamera. |
+| **Notification Service** | `app/services/notification_service.py` | Formatting template notifikasi dinamis dan broadcast pesan via WebSocket. |
+| **Database Models** | `app/models/database.py` | Definisi SQLModel untuk entitas `Camera`, `InferenceResult`, `Detection`, dan `User`. |
+| **Frontend UI** | `frontend/src/` | SPA React 19 dengan multi-view kamera, video player WebRTC/HLS, dashboard statistik, dan log viewer. |
+
+---
+
+## Fitur Utama
+
+### 1. Manajemen Multi-Kamera
+- Mendukung hingga 4 kamera IP aktif secara simultan dengan validasi subnet IP lokal (192.168.x.x, 10.x.x.x, 172.16-31.x.x).
+- Fitur *dummy stream* / file video demo lokal untuk kemudahan demonstrasi tanpa kamera fisik.
+- Pengaturan dinamis path MediaMTX via REST API tanpa perlu me-restart service streaming.
+
+### 2. Penjadwalan Inferensi Fleksibel (Timezone-Aware)
+- Jadwal deteksi dikonfigurasi per kamera menggunakan ekspresi cron (misalnya `* 8-17 * * 1-5` untuk hari kerja).
+- Evaluasi jadwal berbasis zona waktu lokal kamera (misalnya `Asia/Jakarta`).
+
+### 3. Model AI & Parameter Tuning
+- Mendukung pemuatan model YOLO (`.pt`) secara dinamis dari folder `ai_models/`.
+- Ambang batas deteksi (*confidence threshold*) dan IoU threshold dapat diatur per kamera.
+- Pemilihan kelas spesifik (misal: person, helmet, vest) untuk menyaring objek yang tidak relevan.
+
+### 4. Live Streaming & Notifikasi Real-time
+- Streaming latensi rendah menggunakan WebRTC dengan fallback HLS melalui MediaMTX.
+- Notifikasi deteksi instan disalurkan via WebSocket langsung ke antarmuka pengguna dengan format teks yang dapat dikustomisasi (*template tokens*: `[Class]`, `[Camera Name]`, `[Time]`).
+
+### 5. Detection Logs & Visual Audit
+- Setiap deteksi menyimpan snapshot gambar mentah dan gambar teranotasi (bounding box & confidence).
+- Metadata koordinat box, kelas, dan waktu eksekusi tersimpan rapi di PostgreSQL untuk audit berkala.
+
+---
+
+## Tech Stack
+
+| Lapisan | Teknologi | Deskripsi |
+| --- | --- | --- |
+| **Backend API** | FastAPI, Python 3.11 | High-performance asynchronous web server |
+| **ORM & Migrations** | SQLModel, Alembic | Type-safe ORM berbasis Pydantic & SQLAlchemy |
+| **Task Queue & Scheduler** | Celery, Celery Beat, Redis | Background worker & cron scheduler untuk task inferensi |
+| **Computer Vision / AI** | Ultralytics YOLO, OpenCV, PyTorch CPU | Object detection & image processing di CPU edge device |
+| **Media Streaming** | MediaMTX | RTSP / WebRTC / HLS streaming server |
+| **Database** | PostgreSQL 16 | Penyimpanan konfigurasi kamera dan log deteksi |
+| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS v4, shadcn/ui | Single Page Application untuk monitoring dan konfigurasi |
+| **Dev & Packaging** | uv, Ruff | Dependency management cepat dan linting/formatting Python |
+| **Deployment** | Docker & Docker Compose | Multi-container edge orchestration |
+
+---
+
+## Deployment & Konfigurasi Edge
+
+Sistem dijalankan pada edge device menggunakan Docker Compose:
+
+```bash
+# Clone repository
+git clone https://github.com/PT-Ravelware-Technology-Indonesia/edge-ppe-monitoring.git
+cd edge-ppe-monitoring
+
+# Setup environment
+cp .env.example .env
+
+# Jalankan seluruh stack (Postgres, Redis, MediaMTX, FastAPI, Celery Worker, Celery Beat)
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+Dashboard monitoring dapat langsung diakses melalui browser pada port `8000` (`http://<ip-edge-device>:8000`).
